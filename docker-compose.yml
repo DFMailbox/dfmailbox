@@ -21,7 +21,10 @@ services:
 
   webserver:
     init: true
-    build: .
+    build:
+      context: .
+      # In .env make TARGET=dev for faster builds at the cost of size
+      target: ${TARGET:-prod}
     ports:
       - ${DFPS_PORT:-3000}:${DFPS_PORT:-8080}
     depends_on:
@@ -34,6 +37,10 @@ services:
       URL_PATH: ${DFPS_PATH}
       JWT_KEY: ${DFPS_JWT_KEY}
       SECRET_KEY: ${DFPS_SECRET_KEY}
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
     restart: unless-stopped
 
 volumes:
