@@ -9,7 +9,7 @@ generate_random_string() {
 }
 
 read -p "PostgreSQL Password (a strong password): " DFPS_POSTGRES_PASSWORD
-read -p "DFPS_DOMAIN (e.g. example.com): " DFPS_DOMAIN
+read -p "Base path (e.g. example.com/dfpubsub): " DFPS_PATH
 
 read -p "JWT key (leave blank to generate): " DFPS_JWT_KEY
 if [ -z "$DFPS_JWT_KEY" ]; then
@@ -32,7 +32,7 @@ fi
 # Write env file
 cat << EOF > "$ENV_FILE"
 DFPS_POSTGRES_PASSWORD=$DFPS_POSTGRES_PASSWORD
-DFPS_DOMAIN=$DFPS_DOMAIN
+DFPS_PATH=$DFPS_PATH
 DFPS_JWT_KEY=$DFPS_JWT_KEY
 DFPS_SECRET_KEY=$DFPS_SECRET_KEY
 DFPS_PORT=$DFPS_PORT
