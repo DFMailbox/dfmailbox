@@ -8,34 +8,34 @@ generate_random_string() {
   openssl rand "$1" | base64 -w 0 | tr '+/' '-_'
 }
 
-read -p "PostgreSQL Password (a strong password): " DFPS_POSTGRES_PASSWORD
-read -p "Base path (e.g. example.com/dfpubsub): " DFPS_PATH
+read -p "PostgreSQL Password (a strong password): " DFQ_POSTGRES_PASSWORD
+read -p "Base path (e.g. example.com/dfqueue): " DFQ_PATH
 
-read -p "JWT key (leave blank to generate): " DFPS_JWT_KEY
-if [ -z "$DFPS_JWT_KEY" ]; then
-  DFPS_JWT_KEY=$(generate_random_string 64)
-  echo "Generated jwt key: $DFPS_JWT_KEY"
+read -p "JWT key (leave blank to generate): " DFQ_JWT_KEY
+if [ -z "$DFQ_JWT_KEY" ]; then
+  DFQ_JWT_KEY=$(generate_random_string 64)
+  echo "Generated jwt key: $DFQ_JWT_KEY"
 fi
 
-read -p "Secret key (leave blank to generate): " DFPS_SECRET_KEY
-if [ -z "$DFPS_SECRET_KEY" ]; then
-  DFPS_SECRET_KEY=$(generate_random_string 32)
-  echo "Secret key: $DFPS_SECRET_KEY"
+read -p "Secret key (leave blank to generate): " DFQ_SECRET_KEY
+if [ -z "$DFQ_SECRET_KEY" ]; then
+  DFQ_SECRET_KEY=$(generate_random_string 32)
+  echo "Secret key: $DFQ_SECRET_KEY"
 fi
 
-read -p "Enter DFPS_PORT (8080): " DFPS_PORT
-if [ -z "$DFPS_PORT" ]; then
-  DFPS_PORT=8080
-  echo "Using default DFPS_PORT: $DFPS_PORT"
+read -p "Enter DFQ_PORT (8080): " DFQ_PORT
+if [ -z "$DFQ_PORT" ]; then
+  DFQ_PORT=8080
+  echo "Using default DFQ_PORT: $DFQ_PORT"
 fi
 
 # Write env file
 cat << EOF > "$ENV_FILE"
-DFPS_POSTGRES_PASSWORD=$DFPS_POSTGRES_PASSWORD
-DFPS_PATH=$DFPS_PATH
-DFPS_JWT_KEY=$DFPS_JWT_KEY
-DFPS_SECRET_KEY=$DFPS_SECRET_KEY
-DFPS_PORT=$DFPS_PORT
+DFQ_POSTGRES_PASSWORD=$DFQ_POSTGRES_PASSWORD
+DFQ_PATH=$DFQ_PATH
+DFQ_JWT_KEY=$DFQ_JWT_KEY
+DFQ_SECRET_KEY=$DFQ_SECRET_KEY
+DFQ_PORT=$DFQ_PORT
 EOF
 
 echo ""
