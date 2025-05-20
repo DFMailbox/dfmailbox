@@ -23,13 +23,13 @@ services:
     init: true
     build: .
     ports:
-      - ${DFPS_PORT:-3000}:${DFT_PORT:-3000}
+      - ${DFPS_PORT:-3000}:${DFPS_PORT:-8080}
     depends_on:
       - postgres
       - redis
     environment:
-      PORT: ${DFPS_PORT:-3000}
-      DATABASE_URL: postgres://${DFPS_POSTGRES_USER:-dfuser}:${DFT_POSTGRES_PASSWORD}@postgres:5432/${DFT_POSTGRES_DB:-dftools}
+      PORT: ${DFPS_PORT:-8080}
+      DATABASE_URL: postgres://${DFPS_POSTGRES_USER:-dfuser}:${DFPS_POSTGRES_PASSWORD}@postgres:5432/${DFPS_POSTGRES_DB:-dftools}
       REDIS_URL: redis://redis:6379/0
       DOMAIN: ${DFPS_DOMAIN}
       JWT_KEY: ${DFPS_JWT_KEY}

@@ -1,26 +1,31 @@
 {
   description = "Gleam Erlang dev environment";
 
-  inputs = {nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";};
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs-old.url = "github:NixOS/nixpkgs/nixos-24.11";
+  };
 
   outputs = {
     self,
     nixpkgs,
+    nixpkgs-old,
   }: let
     allSystems = ["x86_64-linux" "aarch64-darwin"];
-    # Found from
-    # https://nix4noobs.com/flakes/devshells/
-    forAllSystems = fn:
-      nixpkgs.lib.genAttrs allSystems
-      (system: fn {pkgs = import nixpkgs {inherit system;};});
+    forAllSystems = fn: (nixpkgs.lib.genAttrs allSystems
+      (system:
+        fn {
+          pkgs = import nixpkgs {inherit system;};
+          pkgs-old = import nixpkgs-old {inherit system;};
+        }));
   in {
-    devShells = forAllSystems ({pkgs}: {
+    devShells = forAllSystems ({pkgs, pkgs-old}: {
       default = pkgs.mkShell {
-        # name = "nix";
         nativeBuildInputs = with pkgs; [
           gleam
           erlang
           rebar3
+          pkgs-old.go-migrate
         ];
       };
     });
