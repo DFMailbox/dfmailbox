@@ -4,7 +4,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ${DFQ_POSTGRES_DB:-dftools}
+      POSTGRES_DB: ${DFQ_POSTGRES_DB:-dfqueue}
       POSTGRES_USER: ${DFQ_POSTGRES_USER:-dfuser}
       POSTGRES_PASSWORD: ${DFQ_POSTGRES_PASSWORD}
     volumes:
@@ -28,11 +28,11 @@ services:
     ports:
       - ${DFQ_PORT:-3000}:${DFQ_PORT:-8080}
     depends_on:
-      - postgres
+      - migrator
       - redis
     environment:
       PORT: ${DFQ_PORT:-8080}
-      DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dftools}
+      DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}
       REDIS_URL: redis://redis:6379/0
       URL_PATH: ${DFQ_PATH}
       JWT_KEY: ${DFQ_JWT_KEY}
@@ -43,7 +43,22 @@ services:
           path: ./src
     restart: unless-stopped
 
+  migrator:
+    image: migrate/migrate
+    volumes:
+      - migrations:/migrations
+    command:
+      - "-path=/migrations/"
+      - "-database=postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}"
+      - "up"
+    depends_on:
+      - postgres
+    restart: "no"
+  certstrap:
+    
+
 volumes:
   postgres_data:
   redis_data:
+  migrations:
 
