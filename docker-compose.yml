@@ -23,7 +23,7 @@ services:
     init: true
     build:
       context: ./server
-      # In .env make TARGET=dev for faster builds at the cost of size
+      # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
       target: ${TARGET:-prod}
     ports:
       - ${DFQ_PORT:-3000}:${DFQ_PORT:-8080}
@@ -46,7 +46,7 @@ services:
   migrator:
     image: migrate/migrate
     volumes:
-      - migrations:/migrations
+      - ./migrations:/migrations
     command:
       - "-path=/migrations/"
       - "-database=postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}"
@@ -58,5 +58,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  migrations:
 
