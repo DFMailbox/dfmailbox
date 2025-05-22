@@ -36,7 +36,9 @@ DFQ_PATH="$DFQ_PATH"
 DFQ_JWT_KEY="$DFQ_JWT_KEY"
 DFQ_SECRET_KEY="$DFQ_SECRET_KEY"
 DFQ_PORT="$DFQ_PORT"
-TARGET="dev"
+
+# Change this to `dev` for development
+TARGET="prod"
 EOF
 
 echo ""
