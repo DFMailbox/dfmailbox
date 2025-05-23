@@ -1,8 +1,11 @@
+import app/ctx
 import app/router
 import dot_env
 import dot_env/env
 import gleam/erlang/process
+import gleam/result
 import mist
+import pog
 import wisp
 import wisp/wisp_mist
 
@@ -11,9 +14,18 @@ pub fn main() -> Nil {
   dot_env.load_default()
 
   let env = get_env()
+  let assert Ok(config) =
+    pog.url_config(env.database_url)
+    |> result.replace_error("Cannot parse database url")
+
+  let conn =
+    config
+    |> pog.connect
+
+  let context = ctx.Context(conn: conn)
 
   let assert Ok(_subj) =
-    wisp_mist.handler(router.handle_request, env.secret_key)
+    wisp_mist.handler(router.handle_request(_, context), env.secret_key)
     |> mist.new
     |> mist.bind("0.0.0.0")
     |> mist.port(env.port)

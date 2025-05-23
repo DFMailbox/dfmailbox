@@ -1,3 +1,5 @@
+import pog
+
 pub type Context {
-  Context
+  Context(conn: pog.Connection)
 }
