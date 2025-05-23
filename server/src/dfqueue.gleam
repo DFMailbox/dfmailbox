@@ -15,6 +15,7 @@ pub fn main() -> Nil {
   let assert Ok(_subj) =
     wisp_mist.handler(router.handle_request, env.secret_key)
     |> mist.new
+    |> mist.bind("0.0.0.0")
     |> mist.port(env.port)
     |> mist.start_http
 
