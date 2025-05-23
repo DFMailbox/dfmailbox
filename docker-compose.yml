@@ -34,7 +34,7 @@ services:
       PORT: ${DFQ_PORT:-8080}
       DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}
       REDIS_URL: redis://redis:6379/0
-      URL_PATH: ${DFQ_PATH}
+      HOST: ${DFQ_HOST}
       JWT_KEY: ${DFQ_JWT_KEY}
       SECRET_KEY: ${DFQ_SECRET_KEY}
     develop:
@@ -49,7 +49,7 @@ services:
       - ./migrations:/migrations
     command:
       - "-path=/migrations/"
-      - "-database=postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}"
+      - "-database=postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}?sslmode=disable"
       - "up"
     depends_on:
       - postgres

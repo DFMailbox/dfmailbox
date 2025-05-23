@@ -27,7 +27,7 @@ fn get_env() -> ProgramEnv {
   let assert Ok(redis_url) = env.get_string("REDIS_URL")
   let assert Ok(database_url) = env.get_string("DATABASE_URL")
   let assert Ok(port) = env.get_int("PORT")
-  let assert Ok(domain) = env.get_string("URL_PATH")
+  let assert Ok(domain) = env.get_string("HOST")
 
   ProgramEnv(secret_key, jwt_key, redis_url, database_url, port, domain)
 }
@@ -39,6 +39,6 @@ pub type ProgramEnv {
     redis_url: String,
     database_url: String,
     port: Int,
-    path: String,
+    host: String,
   )
 }
