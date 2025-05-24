@@ -1,17 +1,15 @@
 import app/ctx
 import app/handle/h_plot
+import app/handle/h_server
 import app/web
-import ed25519
 import gleam/http
-import gleam/string
 import gleam/string_tree
 import wisp.{type Request, type Response}
 
 pub fn handle_request(req: Request, ctx: ctx.Context) -> Response {
   use _req <- web.middleware(req)
 
-  // NOTE: A guideline what to put here vs in a handler function:
-  // If it can be expressed in an OpenAPI spec, put it here
+  // NOTE: an h_ function cannot take a request
   case wisp.path_segments(req) {
     ["v0", ..seg] ->
       case seg {
@@ -21,7 +19,9 @@ pub fn handle_request(req: Request, ctx: ctx.Context) -> Response {
               let query = wisp.get_query(req)
               h_plot.get_plot(query, ctx)
             }
-            http.Post -> todo
+            http.Post -> {
+              todo
+            }
             http.Put -> todo
             http.Delete -> todo
             _ ->
@@ -32,6 +32,11 @@ pub fn handle_request(req: Request, ctx: ctx.Context) -> Response {
                 http.Delete,
               ])
           }
+        ["info", ..] -> {
+          use <- wisp.require_method(req, http.Get)
+          let query = wisp.get_query(req)
+          h_server.sign(query, ctx)
+        }
         _ -> wisp.not_found()
       }
     _ -> {

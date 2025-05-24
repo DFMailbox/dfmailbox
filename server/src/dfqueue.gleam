@@ -2,6 +2,7 @@ import app/ctx
 import app/router
 import dot_env
 import dot_env/env
+import ed25519/private_key
 import gleam/erlang/process
 import gleam/result
 import mist
@@ -22,7 +23,9 @@ pub fn main() -> Nil {
     config
     |> pog.connect
 
-  let context = ctx.Context(conn: conn)
+  let assert Ok(private_key) = private_key.from_base64(env.secret_key)
+
+  let context = ctx.Context(conn:, private_key:)
 
   let assert Ok(_subj) =
     wisp_mist.handler(router.handle_request(_, context), env.secret_key)

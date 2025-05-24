@@ -9,10 +9,7 @@ import sql
 import wisp
 import youid/uuid
 
-pub fn get_plot(
-  query: List(#(String, String)),
-  ctx: ctx.Context,
-) -> wisp.Response {
+pub fn get_plot(query: helper.Query, ctx: ctx.Context) -> wisp.Response {
   use id <- helper.require_id(query)
   use plot_row <- helper.guard_db(sql.get_plot(ctx.conn, id))
   let plot = list.first(plot_row.rows)
@@ -25,7 +22,7 @@ pub fn get_plot(
             json.object([
               #(
                 "public_key",
-                json.string(key |> bit_array.base64_url_encode(False)),
+                json.string(key |> bit_array.base64_encode(False)),
               ),
               #("domain", json.string(domain)),
             ]),
