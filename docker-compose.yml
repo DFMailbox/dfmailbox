@@ -11,14 +11,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
   webserver:
     init: true
     build:
@@ -29,11 +21,9 @@ services:
       - ${DFQ_PORT:-8080}:${DFQ_PORT:-8080}
     depends_on:
       - migrator
-      - redis
     environment:
       PORT: ${DFQ_PORT:-8080}
       DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}
-      REDIS_URL: redis://redis:6379/0
       HOST: ${DFQ_HOST}
       SECRET_KEY: ${DFQ_SECRET_KEY}
     develop:
@@ -57,5 +47,4 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
 
