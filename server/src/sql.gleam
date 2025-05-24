@@ -3,6 +3,25 @@ import gleam/option.{type Option}
 import pog
 import youid/uuid.{type Uuid}
 
+/// Runs the `register_plot_int` query
+/// defined in `./src/sql/register_plot_int.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn register_plot_int(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "INSERT INTO plot (id, owner)
+VALUES ($1, $2)
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.parameter(pog.text(uuid.to_string(arg_2)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `get_plot` query
 /// defined in `./src/sql/get_plot.sql`.
 ///
@@ -34,11 +53,31 @@ pub fn get_plot(db, arg_1) {
   }
 
   "SELECT plot.id, owner, public_key, domain FROM plot
-LEFT JOIN known_instance instance ON instance.id = plot.instance
+LEFT JOIN known_instance instance ON instance.public_key = plot.instance
 WHERE plot.id = $1;
 "
   |> pog.query
   |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `register_plot_ext` query
+/// defined in `./src/sql/register_plot_ext.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn register_plot_ext(db, arg_1, arg_2, arg_3) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "INSERT INTO plot (id, owner, instance)
+VALUES ($1, $2, $3)
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.parameter(pog.text(uuid.to_string(arg_2)))
+  |> pog.parameter(pog.bytea(arg_3))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

@@ -1,4 +1,5 @@
 import app/ctx
+import app/profiles
 import app/router
 import dot_env
 import dot_env/env
@@ -8,7 +9,6 @@ import gleam/result
 import mist
 import pog
 import wisp
-import wisp/wisp_mist
 
 pub fn main() -> Nil {
   wisp.configure_logger()
@@ -24,11 +24,18 @@ pub fn main() -> Nil {
     |> pog.connect
 
   let assert Ok(private_key) = private_key.from_base64(env.secret_key)
+  let assert Ok(profile_cache) = profiles.new()
 
-  let context = ctx.Context(conn:, private_key:)
+  let df_ips = [
+    mist.IpV4(127, 0, 0, 1),
+    mist.IpV4(51, 222, 245, 229),
+    mist.IpV4(172, 21, 0, 1),
+  ]
+  let context =
+    ctx.Context(conn:, private_key:, profiles: profile_cache, df_ips:)
 
   let assert Ok(_subj) =
-    wisp_mist.handler(router.handle_request(_, context), env.secret_key)
+    router.handle_mist(_, env.secret_key, context)
     |> mist.new
     |> mist.bind("0.0.0.0")
     |> mist.port(env.port)

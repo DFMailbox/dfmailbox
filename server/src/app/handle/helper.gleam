@@ -1,4 +1,5 @@
 import gleam/dict
+import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/list
@@ -73,7 +74,35 @@ pub fn construct_error(msg: String, code: Int) -> wisp.Response {
   )
 }
 
-pub fn try_res(res: Result(a, wisp.Response), func: fn(a) -> wisp.Response) {
-  result.map(res, func)
+pub fn try_res(res: Result(a, wisp.Response), body: fn(a) -> wisp.Response) {
+  result.map(res, body)
   |> result.unwrap_both
+}
+
+pub fn guard_json(
+  json: decode.Dynamic,
+  decoder: decode.Decoder(a),
+  body: fn(a) -> wisp.Response,
+) -> wisp.Response {
+  decode.run(json, decoder)
+  |> result.map_error(transform_decode_err)
+  |> result.map(body)
+  |> result.unwrap_both
+}
+
+fn decode_error_format(err: decode.DecodeError) {
+  "Decode failed in '"
+  <> string.join(err.path, ", ")
+  <> "' expected '"
+  <> err.expected
+  <> "', got '"
+  <> err.found
+  <> "'"
+}
+
+pub fn transform_decode_err(err: List(decode.DecodeError)) {
+  list.map(err, decode_error_format)
+  |> json.array(of: json.string)
+  |> json.to_string_tree
+  |> wisp.json_body(wisp.bad_request(), _)
 }
