@@ -26,6 +26,8 @@
           erlang
           rebar3
           pkgs-old.go-migrate
+          elixir_1_18
+          beam27Packages.hex
         ];
       };
     });

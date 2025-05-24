@@ -35,20 +35,18 @@ pub fn main() -> Nil {
 }
 
 fn get_env() -> ProgramEnv {
-  let assert Ok(jwt_key) = env.get_string("JWT_KEY")
   let assert Ok(secret_key) = env.get_string("SECRET_KEY")
   let assert Ok(redis_url) = env.get_string("REDIS_URL")
   let assert Ok(database_url) = env.get_string("DATABASE_URL")
   let assert Ok(port) = env.get_int("PORT")
-  let assert Ok(domain) = env.get_string("HOST")
+  let assert Ok(host) = env.get_string("HOST")
 
-  ProgramEnv(secret_key, jwt_key, redis_url, database_url, port, domain)
+  ProgramEnv(secret_key, redis_url, database_url, port, host)
 }
 
 pub type ProgramEnv {
   ProgramEnv(
     secret_key: String,
-    jwt_key: String,
     redis_url: String,
     database_url: String,
     port: Int,

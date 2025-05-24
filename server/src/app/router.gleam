@@ -1,8 +1,10 @@
 import app/ctx
 import app/handle/h_plot
-import app/handle/helper
 import app/web
+import ed25519
 import gleam/http
+import gleam/string
+import gleam/string_tree
 import wisp.{type Request, type Response}
 
 pub fn handle_request(req: Request, ctx: ctx.Context) -> Response {
@@ -32,6 +34,8 @@ pub fn handle_request(req: Request, ctx: ctx.Context) -> Response {
           }
         _ -> wisp.not_found()
       }
-    _ -> wisp.not_found()
+    _ -> {
+      wisp.html_response("dfqueue" |> string_tree.from_string, 200)
+    }
   }
 }

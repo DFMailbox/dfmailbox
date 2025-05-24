@@ -35,7 +35,6 @@ services:
       DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}
       REDIS_URL: redis://redis:6379/0
       HOST: ${DFQ_HOST}
-      JWT_KEY: ${DFQ_JWT_KEY}
       SECRET_KEY: ${DFQ_SECRET_KEY}
     develop:
       watch:
