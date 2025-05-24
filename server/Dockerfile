@@ -9,9 +9,6 @@ RUN mkdir -p src && gleam build
 COPY ./test/ test
 COPY ./src/ src
 
-FROM base AS dev
-CMD ["gleam", "run"]
-
 FROM base AS build
 RUN gleam export erlang-shipment
 
@@ -24,3 +21,6 @@ WORKDIR /app
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["run"]
 
+FROM base AS dev
+ENTRYPOINT ["gleam"]
+CMD ["run"]
