@@ -2,25 +2,30 @@ import app/ctx
 import app/handle/helper
 import ed25519/public_key
 import ed25519/signature
-import gleam/bit_array
 import gleam/dict
 import gleam/json
 import gleam/result
 import wisp
+import youid/uuid
 
 pub fn sign(query: helper.Query, ctx: ctx.Context) {
   let query = dict.from_list(query)
-  use to_sign <- helper.require_query(query, "to_sign")
-  use to_sign <- helper.try_res(
-    bit_array.base64_url_decode(to_sign)
-    |> result.replace_error(helper.construct_error("to_sign is not base64", 400)),
+  use challenge <- helper.require_query(query, "challenge")
+  use challenge <- helper.try_res(
+    uuid.from_string(challenge)
+    |> result.replace_error(helper.construct_error("challenge is not uuid", 400)),
   )
 
   let public_key =
     ctx.private_key
-    |> public_key.derive_key
+    |> public_key.derive_key()
+
   let sig =
-    signature.create(ctx.private_key, public_key, to_sign)
+    signature.create(
+      ctx.private_key,
+      public_key,
+      challenge |> uuid.to_bit_array(),
+    )
     |> signature.to_base64()
 
   json.object([
