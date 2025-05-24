@@ -1,6 +1,6 @@
 CREATE TABLE plot (
     id INTEGER PRIMARY KEY NOT NULL, -- DF plot id
     owner UUID NOT NULL,
-    instance INTEGER REFERENCES known_instance(id)
+    instance BYTEA REFERENCES known_instance(public_key)
 );
 

@@ -1,5 +1,4 @@
 CREATE TABLE known_instance (
-    id SERIAL PRIMARY KEY,
-    public_key bytea NOT NULL UNIQUE,
+    public_key bytea PRIMARY KEY,
     domain TEXT NOT NULL UNIQUE
 );
