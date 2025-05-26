@@ -22,6 +22,37 @@ VALUES ($1, $2)
   |> pog.execute(db)
 }
 
+/// A row you get from running the `get_domain` query
+/// defined in `./src/sql/get_domain.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type GetDomainRow {
+  GetDomainRow(domain: Option(String))
+}
+
+/// Runs the `get_domain` query
+/// defined in `./src/sql/get_domain.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn get_domain(db, arg_1) {
+  let decoder = {
+    use domain <- decode.field(0, decode.optional(decode.string))
+    decode.success(GetDomainRow(domain:))
+  }
+
+  "SELECT domain FROM known_instance
+WHERE public_key = $1
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `get_plot` query
 /// defined in `./src/sql/get_plot.sql`.
 ///
@@ -58,6 +89,25 @@ WHERE plot.id = $1;
 "
   |> pog.query
   |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `identify_instance` query
+/// defined in `./src/sql/identify_instance.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn identify_instance(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "INSERT INTO known_instance (public_key, domain)
+VALUES ($1, $2)
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
+  |> pog.parameter(pog.text(arg_2))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

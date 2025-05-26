@@ -19,6 +19,8 @@ pub fn generate() -> PrivateKey {
 }
 
 pub fn deserialize(buf: BitArray) -> Result(#(PrivateKey, BitArray), String) {
+  // prevent compiler from complaining
+  let _ = size
   case buf {
     <<bytes:unit(8)-size(size)-bytes, rest:bits>> ->
       Ok(#(PrivateKey(bytes), rest))

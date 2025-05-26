@@ -9,7 +9,7 @@ import gleam/bytes_tree.{type BytesTree}
 import gleam/result
 import gleam/string
 
-pub const size = 64
+const size = 64
 
 pub opaque type Signature {
   Signature(buf: BitArray)
@@ -25,6 +25,14 @@ pub fn create(
     private_key.serialize_to_bits(private),
     public_key.serialize_to_bits(public),
   ))
+}
+
+pub fn validate_signature(
+  sig: Signature,
+  bits: BitArray,
+  key: public_key.PublicKey,
+) -> Bool {
+  bindings.valid_signature(sig.buf, bits, public_key.serialize_to_bits(key))
 }
 
 pub fn default() -> Signature {

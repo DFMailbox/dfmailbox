@@ -26,7 +26,6 @@ pub fn handle_request(
 ) -> Response {
   use req <- web.middleware(req)
   use auth <- web.auth_midleware(req, mist, ctx)
-  echo { "auth: " <> auth |> string.inspect }
 
   // NOTE: an h_ function cannot take a request
   case wisp.path_segments(req) {
@@ -52,11 +51,26 @@ pub fn handle_request(
                 http.Delete,
               ])
           }
-        ["info", ..] -> {
-          use <- wisp.require_method(req, http.Get)
-          let query = wisp.get_query(req)
-          h_server.sign(query, ctx)
-        }
+        ["instance", ..] ->
+          case req.method {
+            http.Get -> {
+              let query = wisp.get_query(req)
+              h_server.sign(query, ctx)
+            }
+            http.Post -> {
+              use json <- wisp.require_json(req)
+              h_server.identity_key(json, ctx)
+            }
+            http.Put -> todo
+            http.Delete -> todo
+            _ ->
+              wisp.method_not_allowed([
+                http.Get,
+                http.Post,
+                http.Put,
+                http.Delete,
+              ])
+          }
         _ -> wisp.not_found()
       }
     _ -> {
