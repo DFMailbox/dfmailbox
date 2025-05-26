@@ -1,5 +1,4 @@
 import app/ctx
-import app/instance
 import app/profiles
 import app/router
 import dot_env
@@ -9,7 +8,6 @@ import gleam/bool
 import gleam/erlang/process
 import gleam/int
 import gleam/list
-import gleam/option
 import gleam/result
 import gleam/string
 import mist

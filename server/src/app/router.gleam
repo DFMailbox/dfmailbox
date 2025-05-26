@@ -5,7 +5,6 @@ import app/web
 import gleam/http
 import gleam/http/request
 import gleam/http/response
-import gleam/string
 import gleam/string_tree
 import mist
 import wisp.{type Request, type Response}
