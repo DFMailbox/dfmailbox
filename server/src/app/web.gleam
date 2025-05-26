@@ -58,10 +58,10 @@ fn process_plot_auth(
   conn: pog.Connection,
   info: Result(mist.ConnectionInfo, Nil),
   user_agent: Result(String, Nil),
-  df_ips: List(mist.IpAddress),
+  df_ips: List(mist.ConnectionInfo),
 ) -> Result(Authentication, Nil) {
   use info <- result.try(info)
-  use <- bool.guard(!list.contains(df_ips, info.ip_address), Error(Nil))
+  use <- bool.guard(!list.contains(df_ips, info), Error(Nil))
 
   use user_agent <- result.try(user_agent)
   use #(plot_id, username) <- result.try(parse_user_agent(user_agent))

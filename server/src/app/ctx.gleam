@@ -8,6 +8,6 @@ pub type Context {
     conn: pog.Connection,
     private_key: private_key.PrivateKey,
     profiles: profiles.Cache,
-    df_ips: List(mist.IpAddress),
+    df_ips: List(mist.ConnectionInfo),
   )
 }

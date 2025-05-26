@@ -51,25 +51,25 @@ pub fn handle_request(
                 http.Delete,
               ])
           }
-        ["instance", ..] ->
-          case req.method {
-            http.Get -> {
-              let query = wisp.get_query(req)
-              h_server.sign(query, ctx)
-            }
-            http.Post -> {
-              use json <- wisp.require_json(req)
-              h_server.identity_key(json, ctx)
-            }
-            http.Put -> todo
-            http.Delete -> todo
-            _ ->
-              wisp.method_not_allowed([
-                http.Get,
-                http.Post,
-                http.Put,
-                http.Delete,
-              ])
+        ["federation", ..segs] ->
+          case segs {
+            ["instance"] ->
+              case req.method {
+                http.Get -> {
+                  let query = wisp.get_query(req)
+                  h_server.sign(query, ctx)
+                }
+                http.Post -> {
+                  use json <- wisp.require_json(req)
+                  h_server.identity_key(json, ctx)
+                }
+                http.Delete -> {
+                  use json <- wisp.require_json(req)
+                  todo
+                }
+                _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
+              }
+            _ -> wisp.not_found()
           }
         _ -> wisp.not_found()
       }
