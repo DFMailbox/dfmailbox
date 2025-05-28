@@ -1,4 +1,5 @@
 FROM elixir:1.18.4-otp-27-alpine AS base
+RUN apk --no-cache add curl
 RUN mix local.hex --force
 COPY --from=ghcr.io/gleam-lang/gleam:v1.9.0-erlang-alpine /bin/gleam /bin/gleam
 COPY gleam.toml manifest.toml /app/

@@ -1,0 +1,102 @@
+services:
+  dfserver:
+    init: true
+    build:
+      context: ./compliance
+      # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
+      target: prod
+    environment:
+      EXPOSED_PORT: 8080
+      ROLE: dfserver
+      HOST: webserver
+      PORT: ${DFQ_INT_PORT:-8080}
+      FEDERATION_HOST: federation
+      FEDERATION_PORT: 8080
+    depends_on:
+      webserver:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
+    stop_grace_period: ${DEV_GRACE_PERIOD:-5s}
+
+  federation:
+    init: true
+    build:
+      context: ./compliance
+      target: prod
+    environment:
+      EXPOSED_PORT: 8080
+      ROLE: federation
+      HOST: webserver
+      PORT: ${DFQ_INT_PORT:-8080}
+      DF_HOST: dfserver
+      DF_PORT: 8080
+    depends_on:
+      webserver:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
+    stop_grace_period: ${DEV_GRACE_PERIOD:-5s}
+
+
+  webserver:
+    init: true
+    build:
+      context: ./server
+      # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
+      target: ${TARGET:-prod}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${DFQ_INT_PORT:-8080}/healthcheck"]
+      interval: 1s
+      timeout: 2s
+      retries: 3
+    ports:
+      - ${DFQ_PORT:-8080}:${DFQ_INT_PORT:-8080}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      PORT: ${DFQ_INT_PORT:-8080}
+      DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}
+      HOST: ${DFQ_HOST}
+      SECRET_KEY: ${DFQ_SECRET_KEY}
+    develop:
+      watch:
+        - action: rebuild
+          path: ./server/src
+    stop_grace_period: ${DFQ_DEV_GRACE_PERIOD:-5s}
+    restart: no
+
+  migrator:
+    image: migrate/migrate
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - "-path=/migrations/"
+      - "-database=postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}?sslmode=disable"
+      - "up"
+    depends_on:
+      - postgres
+    restart: no
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: ${DFQ_POSTGRES_DB:-dfqueue}
+      POSTGRES_USER: ${DFQ_POSTGRES_USER:-dfuser}
+      POSTGRES_PASSWORD: ${DFQ_POSTGRES_PASSWORD}
+    restart: no
+    # The healthcheck doesn't work, I give up for now
+    # healthcheck:
+    #   test: [
+    #         "CMD-SHELL",
+    #   "pg_isready -U ${POSTGRES_USER:-FAILURE} -d ${POSTGRES_DB:-FAILURE}"
+    #       ]
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 5 
+

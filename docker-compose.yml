@@ -20,7 +20,8 @@ services:
     ports:
       - ${DFQ_PORT:-8080}:${DFQ_INT_PORT:-8080}
     depends_on:
-      - migrator
+      migrator:
+        condition: service_completed_successfully
     environment:
       PORT: ${DFQ_INT_PORT:-8080}
       DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}

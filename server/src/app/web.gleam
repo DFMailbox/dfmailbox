@@ -2,6 +2,7 @@ import app/ctx
 import ed25519/public_key
 import gleam/bool
 import gleam/dict
+import gleam/http
 import gleam/http/request
 import gleam/int
 import gleam/list
@@ -19,12 +20,24 @@ pub fn middleware(
   handle_request: fn(wisp.Request) -> wisp.Response,
 ) -> wisp.Response {
   let req = wisp.method_override(req)
-  use <- wisp.log_request(req)
+  use <- log_request(req)
   // I miss this in rust...
-  use <- wisp.rescue_crashes
+  use <- wisp.rescue_crashes()
   use req <- wisp.handle_head(req)
 
   handle_request(req)
+}
+
+pub fn log_request(
+  req: wisp.Request,
+  handler: fn() -> wisp.Response,
+) -> wisp.Response {
+  case req.path == "/healthcheck" {
+    True -> handler()
+    False -> {
+      wisp.log_request(req, handler)
+    }
+  }
 }
 
 pub fn auth_midleware(
