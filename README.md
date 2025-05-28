@@ -2,14 +2,33 @@
 A decentralized way to pass messages to other DiamondFire plots
 
 # Deployment
-To deploy this, follow these steps
-1. Run `./gen_env.sh` to generate a .env file
-2. Run `docker compose up --build` to run the server
+The project uses docker so ensure that is installed
+1. Clone the repo
+```sh
+git clone https://github.com/DynamicCake/dfqueue
+cd dfqueue
+```
+2. Run the make file, this will prompt you to create the .env file
+```sh
+make
+```
 
-If you have another PostgreSQL or Redis instance, edit the `docker-compose.yml` file to suit your needs
+# Testing
+This project runs unit and compliance tests.
+- Unit tests are ran in GitHub's ci-cd pipeline but can also be tested with `gleam test`
+- Compliance tests can be ran with `make compliance_test`
 
 # Development
-1. Run `./gen_env.sh`
-2. Edit generated `.env`'s `TARGET` to be `dev` instead of `prod` for faster runs
-3. Run `docker compose watch` to watch for changes
+1. Run `make`
+2. Edit generated `.env` to add
+```sh
+...
+TARGET=dev
+```
+3. Install gleam and erlang. `nix develop` if you have the nix package manager
+4. Run `docker compose up --build` and press `w` to watch for changes
+    - or `make` if you are feeling like it
+
+## Windows
+Install [git bash](https://gitforwindows.org/) and [make for windows](https://gnuwin32.sourceforge.net/packages/make.htm), then follow the steps.
 

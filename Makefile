@@ -7,6 +7,9 @@ DOCKER_COMPOSE_COMPLIANCE = docker compose -f compliance-docker-compose.yml
 build: .env
 	$(DOCKER_COMPOSE_RUN) up --build
 
+watch: .env
+	$(DOCKER_COMPOSE_RUN) watch
+
 compliance_test: .env
 	$(DOCKER_COMPOSE_COMPLIANCE) up --build
 
