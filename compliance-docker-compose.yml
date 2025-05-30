@@ -4,7 +4,7 @@ services:
     build:
       context: ./compliance
       # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
-      target: prod
+      target: ${TARGET:-prod}
     environment:
       EXPOSED_PORT: 8080
       ROLE: dfserver
@@ -18,14 +18,14 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: ./src
+          path: ./compliance/src
     stop_grace_period: ${DEV_GRACE_PERIOD:-5s}
 
   federation:
     init: true
     build:
       context: ./compliance
-      target: prod
+      target: ${TARGET:-prod}
     environment:
       EXPOSED_PORT: 8080
       ROLE: federation
@@ -39,7 +39,7 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: ./src
+          path: ./compliance/src
     stop_grace_period: ${DEV_GRACE_PERIOD:-5s}
 
 
