@@ -35,5 +35,5 @@ pub fn on_curve(key: Key) -> Bool
 pub fn signature(m: BitArray, sk: Key, pk: Key) -> Signature
 
 /// Validate a signed message
-@external(erlang, "Elixir.Ed25519", "valid_signature")
+@external(erlang, "Elixir.Ed25519", "valid_signature?")
 pub fn valid_signature(sig: Signature, m: BitArray, pk: Key) -> Bool
