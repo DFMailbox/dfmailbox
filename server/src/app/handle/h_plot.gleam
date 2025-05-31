@@ -18,8 +18,7 @@ import sql
 import wisp
 import youid/uuid
 
-pub fn get_plot(query: helper.Query, ctx: ctx.Context) -> wisp.Response {
-  use id <- helper.require_id(query)
+pub fn get_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
   use plot_row <- helper.guard_db(sql.get_plot(ctx.conn, id))
   let plot = list.first(plot_row.rows)
   case plot {

@@ -1,10 +1,13 @@
 import app/ctx
 import app/handle/h_plot
 import app/handle/h_server
+import app/handle/helper
 import app/web
 import gleam/http
 import gleam/http/request
 import gleam/http/response
+import gleam/int
+import gleam/result
 import gleam/string_tree
 import mist
 import wisp.{type Request, type Response}
@@ -30,45 +33,80 @@ pub fn handle_request(
   case wisp.path_segments(req) {
     ["v0", ..seg] ->
       case seg {
-        ["plot", ..] ->
-          case req.method {
-            http.Get -> {
-              let query = wisp.get_query(req)
-              h_plot.get_plot(query, ctx)
-            }
-            http.Post -> {
-              use json <- wisp.require_json(req)
-              h_plot.register_plot(json, auth, ctx)
-            }
-            http.Put -> todo
-            http.Delete -> todo
-            _ ->
-              wisp.method_not_allowed([
-                http.Get,
-                http.Post,
-                http.Put,
-                http.Delete,
-              ])
-          }
-        ["federation", ..segs] ->
-          case segs {
-            ["instance"] ->
+        ["plot", ..seg] ->
+          case seg {
+            [] -> {
               case req.method {
-                http.Get -> {
-                  let query = wisp.get_query(req)
-                  h_server.sign(query, ctx)
-                }
                 http.Post -> {
                   use json <- wisp.require_json(req)
-                  h_server.identity_key(json, ctx)
+                  h_plot.register_plot(json, auth, ctx)
                 }
-                http.Delete -> {
-                  use json <- wisp.require_json(req)
-                  todo
-                }
+                http.Put -> todo as "Update instance"
+                http.Delete -> todo as "Forget instance"
+                _ -> wisp.method_not_allowed([http.Put, http.Post, http.Delete])
+              }
+            }
+            ["queue"] -> {
+              use <- wisp.require_method(req, http.Post)
+              todo as "enqueue"
+            }
+            _ -> wisp.not_found()
+          }
+        ["plots", ..seg] -> {
+          use #(plot_id, seg) <- helper.try_res(case seg {
+            [plot_id, ..seg] -> {
+              use plot_id <- result.try(
+                int.parse(plot_id)
+                |> result.replace_error(helper.construct_error(
+                  "plot_id is not an int",
+                  400,
+                )),
+              )
+
+              Ok(#(plot_id, seg))
+            }
+            [] -> Error(helper.construct_error("No plot_id in path", 404))
+          })
+
+          case seg {
+            [] -> {
+              use <- wisp.require_method(req, http.Get)
+              h_plot.get_plot(plot_id, ctx)
+            }
+            ["queue"] ->
+              case req.method {
+                http.Get -> todo as "Peek queue"
+                http.Post -> todo as "enqueue"
+                http.Delete -> todo as "delete before"
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
             _ -> wisp.not_found()
+          }
+        }
+        _ -> wisp.not_found()
+      }
+    ["federation", ..segs] ->
+      case segs {
+        ["instance"] ->
+          case req.method {
+            http.Get -> {
+              let query = wisp.get_query(req)
+              h_server.sign(query, ctx)
+            }
+            http.Post -> {
+              use json <- wisp.require_json(req)
+              h_server.identity_key(json, ctx)
+            }
+            http.Delete -> {
+              use json <- wisp.require_json(req)
+              todo
+            }
+            _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
+          }
+        ["queue"] ->
+          case req.method {
+            http.Post -> todo as "enqueue"
+            _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
           }
         _ -> wisp.not_found()
       }

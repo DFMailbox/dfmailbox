@@ -2,7 +2,6 @@ import app/ctx
 import ed25519/public_key
 import gleam/bool
 import gleam/dict
-import gleam/http
 import gleam/http/request
 import gleam/int
 import gleam/list
