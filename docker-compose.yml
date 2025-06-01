@@ -27,6 +27,7 @@ services:
       DATABASE_URL: postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}
       HOST: ${DFM_HOST}
       SECRET_KEY: ${DFM_SECRET_KEY}
+      ALLOWED_IPS: ${DFM_ALLOWED_IPS}
     develop:
       watch:
         - action: rebuild
