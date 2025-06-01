@@ -1,5 +1,5 @@
+import actor/profiles
 import app/ctx
-import app/profiles
 import app/router
 import dot_env
 import dot_env/env

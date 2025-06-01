@@ -1,4 +1,4 @@
-import app/profiles
+import actor/profiles
 import ed25519/private_key
 import mist
 import pog

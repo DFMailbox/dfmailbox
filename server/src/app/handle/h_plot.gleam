@@ -1,7 +1,7 @@
+import actor/profiles
 import app/ctx
 import app/handle/decoders
 import app/handle/helper
-import app/profiles
 import app/web
 import ed25519/public_key
 import gleam/bit_array
