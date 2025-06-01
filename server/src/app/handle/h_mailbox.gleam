@@ -75,3 +75,26 @@ pub fn enqueue(
   |> json.to_string_tree()
   |> wisp.json_response(200)
 }
+
+pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
+  use msg_id <- helper.require_id(query)
+  use plot <- helper.try_res(
+    auth
+    |> web.match_generic()
+    |> result.replace_error(helper.construct_error("Plot auth required", 403)),
+  )
+  let mailbox = case
+    ctx.mailbox_map
+    |> cache.get(plot.id)
+  {
+    Ok(it) -> it
+    Error(Nil) -> {
+      let box = plot_mailbox.new(plot.mailbox_msg_id)
+      cache.set(ctx.mailbox_map, plot.id, box)
+      box
+    }
+  }
+  plot_mailbox.cleanup(mailbox, msg_id)
+
+  wisp.ok()
+}

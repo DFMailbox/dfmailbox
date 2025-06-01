@@ -57,7 +57,10 @@ pub fn handle_request(
                   use json <- wisp.require_json(req)
                   h_mailbox.enqueue(json, auth, ctx)
                 }
-                http.Delete -> todo as "delete before"
+                http.Delete -> {
+                  let query = wisp.get_query(req)
+                  h_mailbox.cleanup(query, auth, ctx)
+                }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
             _ -> wisp.not_found()
