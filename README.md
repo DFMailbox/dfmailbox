@@ -1,12 +1,12 @@
-# DFQueue
+# DFMailbox
 A decentralized way to pass messages to other DiamondFire plots
 
 # Deployment
 The project uses docker so ensure that is installed
 1. Clone the repo
 ```sh
-git clone https://github.com/DynamicCake/dfqueue
-cd dfqueue
+git clone https://github.com/DynamicCake/dfmailbox
+cd dfmailbox
 ```
 2. Run the make file, this will prompt you to create the .env file
 ```sh

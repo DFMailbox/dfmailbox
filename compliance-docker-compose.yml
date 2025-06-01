@@ -9,7 +9,7 @@ services:
       EXPOSED_PORT: 8080
       ROLE: dfserver
       HOST: webserver
-      PORT: ${DFQ_INT_PORT:-8080}
+      PORT: ${DFM_INT_PORT:-8080}
       FEDERATION_HOST: federation
       FEDERATION_PORT: 8080
     depends_on:
@@ -30,7 +30,7 @@ services:
       EXPOSED_PORT: 8080
       ROLE: federation
       HOST: webserver
-      PORT: ${DFQ_INT_PORT:-8080}
+      PORT: ${DFM_INT_PORT:-8080}
       DF_HOST: dfserver
       DF_PORT: 8080
     depends_on:
@@ -50,25 +50,25 @@ services:
       # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
       target: ${TARGET:-prod}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${DFQ_INT_PORT:-8080}/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://localhost:${DFM_INT_PORT:-8080}/healthcheck"]
       interval: 1s
       timeout: 2s
       retries: 3
     ports:
-      - ${DFQ_PORT:-8080}:${DFQ_INT_PORT:-8080}
+      - ${DFM_PORT:-8080}:${DFM_INT_PORT:-8080}
     depends_on:
       migrator:
         condition: service_completed_successfully
     environment:
-      PORT: ${DFQ_INT_PORT:-8080}
-      DATABASE_URL: postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}
-      HOST: ${DFQ_HOST}
-      SECRET_KEY: ${DFQ_SECRET_KEY}
+      PORT: ${DFM_INT_PORT:-8080}
+      DATABASE_URL: postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}
+      HOST: ${DFM_HOST}
+      SECRET_KEY: ${DFM_SECRET_KEY}
     develop:
       watch:
         - action: rebuild
           path: ./server/src
-    stop_grace_period: ${DFQ_DEV_GRACE_PERIOD:-5s}
+    stop_grace_period: ${DFM_DEV_GRACE_PERIOD:-5s}
     restart: no
 
   migrator:
@@ -77,7 +77,7 @@ services:
       - ./migrations:/migrations
     command:
       - "-path=/migrations/"
-      - "-database=postgres://${DFQ_POSTGRES_USER:-dfuser}:${DFQ_POSTGRES_PASSWORD}@postgres:5432/${DFQ_POSTGRES_DB:-dfqueue}?sslmode=disable"
+      - "-database=postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}?sslmode=disable"
       - "up"
     depends_on:
       - postgres
@@ -86,9 +86,9 @@ services:
   postgres:
     image: postgres:latest
     environment:
-      POSTGRES_DB: ${DFQ_POSTGRES_DB:-dfqueue}
-      POSTGRES_USER: ${DFQ_POSTGRES_USER:-dfuser}
-      POSTGRES_PASSWORD: ${DFQ_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DFM_POSTGRES_DB:-dfmailbox}
+      POSTGRES_USER: ${DFM_POSTGRES_USER:-dfuser}
+      POSTGRES_PASSWORD: ${DFM_POSTGRES_PASSWORD}
     restart: no
     # The healthcheck doesn't work, I give up for now
     # healthcheck:

@@ -3,7 +3,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/otp/actor
 
-/// This store uses a list as a queue enqueuing at the end and dequeuing at the beginning.
+/// This store uses a list as a mailbox enqueuing at the end and dequeuing at the beginning.
 /// This is to make the reads and cleanup fast (they block the thread) and the inserts slower.
 type Store {
   Store(list: List(StoreRow), id: Int)
@@ -13,11 +13,11 @@ type StoreRow {
   StoreRow(id: Int, val: dfjson.DFJson)
 }
 
-pub type PlotQueue =
-  process.Subject(PlotQueueQuery)
+pub type PlotMailbox =
+  process.Subject(PlotMailboxQuery)
 
-pub type PlotQueueQuery {
-  Enqueue(value: List(dfjson.DFJson), reply_with: Subject(Int))
+pub type PlotMailboxQuery {
+  Post(value: List(dfjson.DFJson), reply_with: Subject(Int))
   // Dequeue doesn't exist because it isn't idempotent, this matters because this will be exposed in the REST API
   Peek(after: Int, reply_with: Subject(List(dfjson.DFJson)))
   Cleanup(before_at: Int)
@@ -25,9 +25,9 @@ pub type PlotQueueQuery {
 }
 
 fn handle_message(
-  message: PlotQueueQuery,
+  message: PlotMailboxQuery,
   store: Store,
-) -> actor.Next(PlotQueueQuery, Store) {
+) -> actor.Next(PlotMailboxQuery, Store) {
   case message {
     Cleanup(id) -> {
       let #(_, list) =
@@ -37,7 +37,7 @@ fn handle_message(
       Store(..store, list: list)
       |> actor.continue()
     }
-    Enqueue(vals, reply) -> {
+    Post(vals, reply) -> {
       process.send(reply, store.id)
       let new =
         vals
@@ -69,20 +69,20 @@ pub fn new() {
 }
 
 /// Clean up all items in the mailbox but keep everything after `keep_after` (not including current item)
-pub fn cleanup(mailbox: PlotQueue, keep_after_id: Int) {
+pub fn cleanup(mailbox: PlotMailbox, keep_after_id: Int) {
   actor.send(mailbox, Cleanup(before_at: keep_after_id))
 }
 
 /// Add items to the end of the mailbox
-pub fn enqueue(mailbox: PlotQueue, items: List(dfjson.DFJson)) {
-  actor.call(mailbox, Enqueue(value: items, reply_with: _), timeout)
+pub fn post(mailbox: PlotMailbox, items: List(dfjson.DFJson)) {
+  actor.call(mailbox, Post(value: items, reply_with: _), timeout)
 }
 
 /// Get all items after a specific id
-pub fn peek(mailbox: PlotQueue, after_id after: Int) {
+pub fn peek(mailbox: PlotMailbox, after_id after: Int) {
   actor.call(mailbox, Peek(after:, reply_with: _), timeout)
 }
 
-pub fn shutdown(cache: PlotQueue) {
+pub fn shutdown(cache: PlotMailbox) {
   process.send(cache, Shutdown)
 }

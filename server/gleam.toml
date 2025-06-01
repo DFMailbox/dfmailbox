@@ -1,9 +1,9 @@
-name = "dfqueue"
+name = "dfmailbox"
 version = "0.0.1"
 
 description = "A decentralized way to pass messages to other DiamondFire plots"
 licences = ["GPL-3.0-or-later"]
-repository = { type = "github", user = "DynamicCake", repo = "dfqueue" }
+repository = { type = "github", user = "DynamicCake", repo = "dfmailbox" }
 links = [{ title = "Website", href = "https://dftools.dev/" }]
 #
 # For a full reference of all the available options, you can have a look at

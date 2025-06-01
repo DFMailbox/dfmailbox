@@ -46,9 +46,9 @@ pub fn handle_request(
                 _ -> wisp.method_not_allowed([http.Put, http.Post, http.Delete])
               }
             }
-            ["queue"] -> {
+            ["mailbox"] -> {
               use <- wisp.require_method(req, http.Post)
-              todo as "enqueue"
+              todo as "post"
             }
             _ -> wisp.not_found()
           }
@@ -73,10 +73,10 @@ pub fn handle_request(
               use <- wisp.require_method(req, http.Get)
               h_plot.get_plot(plot_id, ctx)
             }
-            ["queue"] ->
+            ["mailbox"] ->
               case req.method {
-                http.Get -> todo as "Peek queue"
-                http.Post -> todo as "enqueue"
+                http.Get -> todo as "Peek mailbox"
+                http.Post -> todo as "post mailbox"
                 http.Delete -> todo as "delete before"
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
@@ -103,15 +103,15 @@ pub fn handle_request(
             }
             _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
           }
-        ["queue"] ->
+        ["mailbox"] ->
           case req.method {
-            http.Post -> todo as "enqueue"
+            http.Post -> todo as "post mailbox"
             _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
           }
         _ -> wisp.not_found()
       }
     _ -> {
-      wisp.html_response("dfqueue" |> string_tree.from_string, 200)
+      wisp.html_response("dfmailbox" |> string_tree.from_string, 200)
     }
   }
 }
