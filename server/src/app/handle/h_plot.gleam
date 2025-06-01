@@ -109,7 +109,6 @@ pub fn register_plot(
   )
   case echo res.count {
     1 -> wisp.created()
-    _ ->
-      helper.construct_error("unreachable error: auth should block this", 500)
+    _ -> panic as "unreachable error: auth should block this"
   }
 }

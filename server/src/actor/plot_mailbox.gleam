@@ -1,16 +1,20 @@
 import dfjson
 import gleam/erlang/process.{type Subject}
+import gleam/json
 import gleam/list
 import gleam/otp/actor
 
-/// This store uses a list as a mailbox enqueuing at the end and dequeuing at the beginning.
-/// This is to make the reads and cleanup fast (they block the thread) and the inserts slower.
 type Store {
   Store(list: List(StoreRow), id: Int)
 }
 
-type StoreRow {
+pub type StoreRow {
   StoreRow(id: Int, val: dfjson.DFJson)
+}
+
+pub fn encode_store_row(store_row: StoreRow) -> json.Json {
+  let StoreRow(id:, val:) = store_row
+  json.object([#("id", json.int(id)), #("val", dfjson.encode_df_json(val))])
 }
 
 pub type PlotMailbox =
@@ -19,7 +23,7 @@ pub type PlotMailbox =
 pub type PlotMailboxQuery {
   Post(value: List(dfjson.DFJson), reply_with: Subject(Int))
   // Dequeue doesn't exist because it isn't idempotent, this matters because this will be exposed in the REST API
-  Peek(after: Int, reply_with: Subject(List(dfjson.DFJson)))
+  Peek(after: Int, reply_with: Subject(List(StoreRow)))
   Cleanup(before_at: Int)
   Shutdown
 }
@@ -32,27 +36,23 @@ fn handle_message(
     Cleanup(id) -> {
       let #(_, list) =
         store.list
-        |> list.split_while(fn(x) { x.id >= id })
+        |> list.split_while(fn(x) { x.id <= id })
 
       Store(..store, list: list)
       |> actor.continue()
     }
     Post(vals, reply) -> {
       process.send(reply, store.id)
-      let new =
-        vals
-        |> list.index_map(fn(x, i) { StoreRow(id: store.id + i, val: x) })
-        // kinda expensive
-        |> list.append(store.list)
-
-      Store(list: new, id: store.id + { list.length(new) }) |> actor.continue()
+      let vals =
+        list.index_map(vals, fn(x, i) { StoreRow(id: store.id + i, val: x) })
+      let new = list.append(store.list, vals)
+      Store(list: new, id: store.id + { list.length(vals) }) |> actor.continue()
     }
     Peek(after, reply) -> {
       let #(_, list) =
         store.list
-        |> list.split_while(fn(x) { x.id >= after })
+        |> list.split_while(fn(x) { x.id <= after })
       list
-      |> list.map(fn(x) { x.val })
       |> process.send(reply, _)
 
       store
@@ -64,8 +64,9 @@ fn handle_message(
 
 const timeout = 1000
 
-pub fn new() {
-  actor.start(Store([], 0), handle_message)
+pub fn new(id: Int) {
+  let assert Ok(subj) = actor.start(Store([], id), handle_message)
+  subj
 }
 
 /// Clean up all items in the mailbox but keep everything after `keep_after` (not including current item)
@@ -73,8 +74,9 @@ pub fn cleanup(mailbox: PlotMailbox, keep_after_id: Int) {
   actor.send(mailbox, Cleanup(before_at: keep_after_id))
 }
 
-/// Add items to the end of the mailbox
-pub fn post(mailbox: PlotMailbox, items: List(dfjson.DFJson)) {
+/// Add items to the end of the mailbox.
+/// Returns the msg_id before the insertions
+pub fn post(mailbox: PlotMailbox, items: List(dfjson.DFJson)) -> Int {
   actor.call(mailbox, Post(value: items, reply_with: _), timeout)
 }
 

@@ -1,4 +1,5 @@
 import app/ctx
+import app/handle/h_mailbox
 import app/handle/h_plot
 import app/handle/h_server
 import app/handle/helper
@@ -27,13 +28,13 @@ pub fn handle_request(
   ctx: ctx.Context,
 ) -> Response {
   use req <- web.middleware(req)
-  use auth <- web.auth_midleware(req, mist, ctx)
 
   // NOTE: an h_ function cannot take a request
   case wisp.path_segments(req) {
     ["v0", ..seg] ->
       case seg {
-        ["plot", ..seg] ->
+        ["plot", ..seg] -> {
+          use auth <- web.auth_midleware(req, mist, ctx)
           case seg {
             [] -> {
               case req.method {
@@ -46,12 +47,22 @@ pub fn handle_request(
                 _ -> wisp.method_not_allowed([http.Put, http.Post, http.Delete])
               }
             }
-            ["mailbox"] -> {
-              use <- wisp.require_method(req, http.Post)
-              todo as "post"
-            }
+            ["mailbox"] ->
+              case req.method {
+                http.Get -> {
+                  let query = wisp.get_query(req)
+                  h_mailbox.peek(query, auth, ctx)
+                }
+                http.Post -> {
+                  use json <- wisp.require_json(req)
+                  h_mailbox.enqueue(json, auth, ctx)
+                }
+                http.Delete -> todo as "delete before"
+                _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
+              }
             _ -> wisp.not_found()
           }
+        }
         ["plots", ..seg] -> {
           use #(plot_id, seg) <- helper.try_res(case seg {
             [plot_id, ..seg] -> {
@@ -67,19 +78,17 @@ pub fn handle_request(
             }
             [] -> Error(helper.construct_error("No plot_id in path", 404))
           })
+          use auth <- web.auth_midleware(req, mist, ctx)
 
           case seg {
             [] -> {
               use <- wisp.require_method(req, http.Get)
               h_plot.get_plot(plot_id, ctx)
             }
-            ["mailbox"] ->
-              case req.method {
-                http.Get -> todo as "Peek mailbox"
-                http.Post -> todo as "post mailbox"
-                http.Delete -> todo as "delete before"
-                _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
-              }
+            ["mailbox"] -> {
+              use <- wisp.require_method(req, http.Post)
+              todo as "post"
+            }
             _ -> wisp.not_found()
           }
         }

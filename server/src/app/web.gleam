@@ -70,10 +70,10 @@ fn process_plot_auth(
   conn: pog.Connection,
   info: Result(mist.ConnectionInfo, Nil),
   user_agent: Result(String, Nil),
-  df_ips: List(mist.ConnectionInfo),
+  df_ips: List(mist.IpAddress),
 ) -> Result(Authentication, Nil) {
   use info <- result.try(info)
-  use <- bool.guard(!list.contains(df_ips, info), Error(Nil))
+  use <- bool.guard(!list.contains(df_ips, info.ip_address), Error(Nil))
 
   use user_agent <- result.try(user_agent)
   use #(plot_id, username) <- result.try(parse_user_agent(user_agent))
@@ -88,7 +88,12 @@ fn process_plot_auth(
         }
         option.None -> option.None
       }
-      RegisteredPlot(id: plot.id, owner: plot.owner, instance: public_key)
+      RegisteredPlot(
+        id: plot.id,
+        owner: plot.owner,
+        instance: public_key,
+        mailbox_msg_id: plot.mailbox_msg_id,
+      )
     }
     Error(Nil) -> UnregisteredPlot(id: plot_id, owner: username)
   })
@@ -101,9 +106,29 @@ pub type Authentication {
     id: Int,
     owner: uuid.Uuid,
     instance: option.Option(public_key.PublicKey),
+    mailbox_msg_id: Int,
   )
   // TODO: Implement
   ExternalServer
+}
+
+/// Can either be RegisteredPlot or ExternalServer
+pub type GenericPlot {
+  GenericPlot(
+    id: Int,
+    owner: uuid.Uuid,
+    instance: option.Option(public_key.PublicKey),
+    mailbox_msg_id: Int,
+  )
+}
+
+pub fn match_generic(auth: Authentication) -> Result(GenericPlot, Nil) {
+  case auth {
+    NoAuth -> Error(Nil)
+    UnregisteredPlot(_, _) -> Error(Nil)
+    RegisteredPlot(a, b, c, d) -> Ok(GenericPlot(a, b, c, d))
+    ExternalServer -> todo
+  }
 }
 
 fn parse_user_agent(header: String) -> Result(#(Int, String), Nil) {

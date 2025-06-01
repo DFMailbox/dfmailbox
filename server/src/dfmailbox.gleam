@@ -1,3 +1,4 @@
+import actor/cache
 import actor/profiles
 import app/ctx
 import app/router
@@ -36,6 +37,7 @@ pub fn main() -> Nil {
       private_key:,
       profiles: profile_cache,
       df_ips: env.allowed_ips,
+      mailbox_map: cache.new(),
     )
 
   let assert Ok(_subj) =
@@ -63,10 +65,8 @@ fn get_env() -> ProgramEnv {
               use a <- result.try(int.parse(a))
               use b <- result.try(int.parse(b))
               use c <- result.try(int.parse(c))
-              use #(d, port) <- result.try(string.split_once(d, ":"))
               use d <- result.try(int.parse(d))
-              use port <- result.try(int.parse(port))
-              Ok(mist.ConnectionInfo(port, mist.IpV4(a, b, c, d)))
+              Ok(mist.IpV4(a, b, c, d))
             }
             _ -> Error(Nil)
           }
@@ -84,10 +84,7 @@ fn get_env() -> ProgramEnv {
     Error(_) -> Ok([])
   }
 
-  let df_ips = [
-    mist.ConnectionInfo(80, mist.IpV4(51, 222, 245, 229)),
-    ..extra_ips
-  ]
+  let df_ips = [mist.IpV4(51, 222, 245, 229), ..extra_ips]
 
   ProgramEnv(secret_key, database_url, port, host, df_ips)
 }
@@ -98,6 +95,6 @@ pub type ProgramEnv {
     database_url: String,
     port: Int,
     host: String,
-    allowed_ips: List(mist.ConnectionInfo),
+    allowed_ips: List(mist.IpAddress),
   )
 }
