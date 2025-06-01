@@ -4,17 +4,17 @@ ENV_FILE=".env"
 echo "This utility will walk you through creating a docker compose $ENV_FILE file."
 echo ""
 
-read -p "PostgreSQL Password: " DFQ_POSTGRES_PASSWORD
-read -p "Host domain e.g. example.com: " DFQ_HOST
+read -p "PostgreSQL Password: " DFM_POSTGRES_PASSWORD
+read -p "Host domain e.g. example.com: " DFM_HOST
 
-read -p "Enter port (default: 8080): " DFQ_PORT
-if [ -z "$DFQ_PORT" ]; then
-  DFQ_PORT=8080
+read -p "Enter port (default: 8080): " DFM_PORT
+if [ -z "$DFM_PORT" ]; then
+  DFM_PORT=8080
 fi
 
-read -p "Secret key (default: generate): " DFQ_SECRET_KEY
-if [ -z "$DFQ_SECRET_KEY" ]; then
-  DFQ_SECRET_KEY=$(openssl genpkey -algorithm ED25519 | awk '/^-----BEGIN PRIVATE KEY-----/{p=1;next}/^-----END PRIVATE KEY-----/{p=0}p')
+read -p "Secret key (default: generate): " DFM_SECRET_KEY
+if [ -z "$DFM_SECRET_KEY" ]; then
+  DFM_SECRET_KEY=$(openssl genpkey -algorithm ED25519 | awk '/^-----BEGIN PRIVATE KEY-----/{p=1;next}/^-----END PRIVATE KEY-----/{p=0}p')
 fi
 
 if [ -f $ENV_FILE ]; then
@@ -27,10 +27,10 @@ fi
 
 # Write env file
 cat << EOF > "$ENV_FILE"
-DFQ_POSTGRES_PASSWORD="$DFQ_POSTGRES_PASSWORD"
-DFQ_HOST="$DFQ_HOST"
-DFQ_SECRET_KEY="$DFQ_SECRET_KEY"
-DFQ_PORT="$DFQ_PORT"
+DFM_POSTGRES_PASSWORD="$DFM_POSTGRES_PASSWORD"
+DFM_HOST="$DFM_HOST"
+DFM_SECRET_KEY="$DFM_SECRET_KEY"
+DFM_PORT="$DFM_PORT"
 
 # Change this to 'dev' for development
 TARGET="prod"
