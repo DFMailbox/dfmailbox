@@ -57,6 +57,7 @@ fn get_env() -> ProgramEnv {
   let assert Ok(host) = env.get_string("HOST")
   let assert Ok(extra_ips) = case env.get_string("ALLOWED_IPS") {
     Ok(env) -> {
+      use <- bool.guard(string.is_empty(env), Ok([]))
       let items = string.split(env, " ")
       let it =
         list.map(items, fn(x) {
@@ -73,7 +74,7 @@ fn get_env() -> ProgramEnv {
         })
       use <- bool.guard(
         list.find(it, result.is_error) |> result.is_ok(),
-        Error("Cannot parse IPs\nvalid ip example: 129.168.1.42:8080"),
+        Error("Cannot parse IPs Invalid ip example: 129.168.1.42"),
       )
       it
       |> list.map(
