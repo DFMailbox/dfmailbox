@@ -73,6 +73,25 @@ WHERE public_key = $1
   |> pog.execute(db)
 }
 
+/// Runs the `add_api_key` query
+/// defined in `./src/sql/add_api_key.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn add_api_key(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "INSERT INTO api_key (plot, hashed_key) 
+VALUES ($1, sha256($2))
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.parameter(pog.bytea(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `get_plot` query
 /// defined in `./src/sql/get_plot.sql`.
 ///
@@ -132,6 +151,51 @@ VALUES ($1, $2)
   |> pog.query
   |> pog.parameter(pog.bytea(arg_1))
   |> pog.parameter(pog.text(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `plot_from_api_key` query
+/// defined in `./src/sql/plot_from_api_key.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PlotFromApiKeyRow {
+  PlotFromApiKeyRow(
+    id: Int,
+    owner: Uuid,
+    public_key: Option(BitArray),
+    domain: Option(String),
+    mailbox_msg_id: Int,
+  )
+}
+
+/// Runs the `plot_from_api_key` query
+/// defined in `./src/sql/plot_from_api_key.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn plot_from_api_key(db, arg_1) {
+  let decoder = {
+    use id <- decode.field(0, decode.int)
+    use owner <- decode.field(1, uuid_decoder())
+    use public_key <- decode.field(2, decode.optional(decode.bit_array))
+    use domain <- decode.field(3, decode.optional(decode.string))
+    use mailbox_msg_id <- decode.field(4, decode.int)
+    decode.success(
+      PlotFromApiKeyRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
+    )
+  }
+
+  "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM api_key
+JOIN plot ON plot.id = api_key.plot
+LEFT JOIN known_instance instance ON instance.public_key = plot.instance
+WHERE hashed_key = sha256($1);
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

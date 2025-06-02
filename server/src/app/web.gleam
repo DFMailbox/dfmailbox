@@ -1,5 +1,6 @@
 import app/ctx
 import ed25519/public_key
+import gleam/bit_array
 import gleam/bool
 import gleam/dict
 import gleam/http/request
@@ -48,22 +49,50 @@ pub fn auth_midleware(
   let headers = req.headers |> dict.from_list
   let user_agent = dict.get(headers, "user-agent")
 
-  case
-    mist.get_client_info(mist.body)
-    |> process_plot_auth(ctx.conn, _, user_agent, ctx.df_ips)
-  {
-    Ok(it) -> handle_request(echo it)
-    Error(Nil) ->
-      case process_ext_auth() {
-        Ok(it) -> handle_request(it)
-        Error(Nil) -> handle_request(NoAuth)
-      }
-  }
+  let auth =
+    result.lazy_unwrap(
+      mist.get_client_info(mist.body)
+        |> process_plot_auth(ctx.conn, _, user_agent, ctx.df_ips),
+      fn() {
+        result.unwrap(
+          process_ext_auth(ctx.conn, dict.get(headers, "x-api-key")),
+          NoAuth,
+        )
+      },
+    )
+  handle_request(auth)
 }
 
-fn process_ext_auth() -> Result(Authentication, Nil) {
-  // TODO: implement
-  Error(Nil)
+fn process_ext_auth(
+  conn: pog.Connection,
+  key: Result(String, Nil),
+) -> Result(Authentication, Nil) {
+  use key <- result.try(key)
+  let bits = key |> bit_array.from_string()
+  let assert Ok(plot) = sql.plot_from_api_key(conn, bits) |> echo
+  use plot <- result.try(list.first(plot.rows))
+
+  case plot.public_key {
+    option.None ->
+      LocalPlotApi(
+        id: plot.id,
+        owner: plot.owner,
+        api_key: key,
+        mailbox_msg_id: plot.mailbox_msg_id,
+      )
+
+    option.Some(instance) -> {
+      let assert Ok(instance) = public_key.deserialize_all(instance)
+      RemotePlotApi(
+        id: plot.id,
+        owner: plot.owner,
+        api_key: key,
+        instance: instance,
+        mailbox_msg_id: plot.mailbox_msg_id,
+      )
+    }
+  }
+  |> Ok
 }
 
 fn process_plot_auth(
@@ -78,56 +107,72 @@ fn process_plot_auth(
   use user_agent <- result.try(user_agent)
   use #(plot_id, username) <- result.try(parse_user_agent(user_agent))
   let assert Ok(plot_row) = sql.get_plot(conn, plot_id)
-  Ok(case list.first(plot_row.rows) {
+  case list.first(plot_row.rows) {
     Ok(plot) -> {
-      let public_key = case plot.public_key {
+      case plot.public_key {
         option.Some(key) -> {
-          // Database should always contain good public keys
           let assert Ok(key) = public_key.deserialize_all(key)
-          option.Some(key)
+          RemotePlot(
+            id: plot.id,
+            owner: plot.owner,
+            instance: key,
+            mailbox_msg_id: plot.mailbox_msg_id,
+          )
         }
-        option.None -> option.None
+        option.None ->
+          LocalPlot(
+            id: plot.id,
+            owner: plot.owner,
+            mailbox_msg_id: plot.mailbox_msg_id,
+          )
       }
-      RegisteredPlot(
-        id: plot.id,
-        owner: plot.owner,
-        instance: public_key,
-        mailbox_msg_id: plot.mailbox_msg_id,
-      )
     }
     Error(Nil) -> UnregisteredPlot(id: plot_id, owner: username)
-  })
+  }
+  |> Ok
 }
 
 pub type Authentication {
   NoAuth
   UnregisteredPlot(id: Int, owner: String)
-  RegisteredPlot(
+  LocalPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
+  RemotePlot(
     id: Int,
     owner: uuid.Uuid,
-    instance: option.Option(public_key.PublicKey),
+    instance: public_key.PublicKey,
     mailbox_msg_id: Int,
   )
-  // TODO: Implement
-  ExternalServer
+  LocalPlotApi(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int, api_key: String)
+  RemotePlotApi(
+    id: Int,
+    owner: uuid.Uuid,
+    instance: public_key.PublicKey,
+    mailbox_msg_id: Int,
+    api_key: String,
+  )
 }
 
 /// Can either be RegisteredPlot or ExternalServer
 pub type GenericPlot {
-  GenericPlot(
-    id: Int,
-    owner: uuid.Uuid,
-    instance: option.Option(public_key.PublicKey),
-    mailbox_msg_id: Int,
-  )
+  GenericPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
 }
 
 pub fn match_generic(auth: Authentication) -> Result(GenericPlot, Nil) {
   case auth {
+    LocalPlot(a, b, c) -> Ok(GenericPlot(a, b, c))
+    LocalPlotApi(a, b, c, _) -> Ok(GenericPlot(a, b, c))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn match_authenticated(auth: Authentication) -> Result(Int, Nil) {
+  case auth {
+    LocalPlot(a, _, _) -> Ok(a)
+    LocalPlotApi(a, _, _, _) -> Ok(a)
+    RemotePlot(a, _, _, _) -> Ok(a)
+    RemotePlotApi(a, _, _, _, _) -> Ok(a)
+    UnregisteredPlot(a, _) -> Ok(a)
     NoAuth -> Error(Nil)
-    UnregisteredPlot(_, _) -> Error(Nil)
-    RegisteredPlot(a, b, c, d) -> Ok(GenericPlot(a, b, c, d))
-    ExternalServer -> todo
   }
 }
 

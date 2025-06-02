@@ -1,4 +1,5 @@
 import app/ctx
+import app/handle/h_api_key
 import app/handle/h_mailbox
 import app/handle/h_plot
 import app/handle/h_server
@@ -8,6 +9,7 @@ import gleam/http
 import gleam/http/request
 import gleam/http/response
 import gleam/int
+import gleam/json
 import gleam/result
 import gleam/string_tree
 import mist
@@ -47,6 +49,19 @@ pub fn handle_request(
                 _ -> wisp.method_not_allowed([http.Put, http.Post, http.Delete])
               }
             }
+            ["whoami"] -> {
+              use <- wisp.require_method(req, http.Get)
+              use a <- helper.try_res(
+                web.match_authenticated(auth)
+                |> result.replace_error(helper.construct_error(
+                  "Must have some auth",
+                  401,
+                )),
+              )
+              json.object([#("plot_id", json.int(a))])
+              |> json.to_string_tree()
+              |> wisp.json_response(200)
+            }
             ["mailbox"] ->
               case req.method {
                 http.Get -> {
@@ -63,6 +78,17 @@ pub fn handle_request(
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
+            ["api-key"] ->
+              case req.method {
+                http.Get -> {
+                  todo
+                }
+                http.Post -> {
+                  h_api_key.add(auth, ctx)
+                }
+                _ -> todo
+              }
+
             _ -> wisp.not_found()
           }
         }
