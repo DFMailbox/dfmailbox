@@ -69,7 +69,9 @@ pub fn register_plot(
 ) {
   use #(plot_id, name) <- helper.try_res(case auth {
     web.UnregisteredPlot(plot_id, name) -> Ok(#(plot_id, name))
-    _ -> Error(helper.construct_error("Unregistered plot auth required", 403))
+    web.NoAuth ->
+      Error(helper.construct_error("No authentication present", 401))
+    _ -> Error(helper.construct_error("Plot already registered", 403))
   })
   use body <- helper.guard_json(json, register_plot_body_decoder())
 
