@@ -12,5 +12,6 @@ pub type Context {
     profiles: profiles.Cache,
     df_ips: List(mist.IpAddress),
     mailbox_map: cache.Cache(Int, plot_mailbox.PlotMailbox),
+    nginx: Bool,
   )
 }

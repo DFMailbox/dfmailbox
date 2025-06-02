@@ -28,6 +28,7 @@ services:
       HOST: ${DFM_HOST}
       SECRET_KEY: ${DFM_SECRET_KEY}
       ALLOWED_IPS: ${DFM_ALLOWED_IPS}
+      IS_NGINX: ${DFM_IS_NGINX}
     develop:
       watch:
         - action: rebuild

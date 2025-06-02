@@ -38,6 +38,7 @@ pub fn main() -> Nil {
       profiles: profile_cache,
       df_ips: env.allowed_ips,
       mailbox_map: cache.new(),
+      nginx: env.is_nginx,
     )
 
   let assert Ok(_subj) =
@@ -84,10 +85,11 @@ fn get_env() -> ProgramEnv {
     }
     Error(_) -> Ok([])
   }
+  let nginx = env.get_bool_or("IS_NGINX", False)
 
   let df_ips = [mist.IpV4(51, 222, 245, 229), ..extra_ips]
 
-  ProgramEnv(secret_key, database_url, port, host, df_ips)
+  ProgramEnv(secret_key, database_url, port, host, df_ips, nginx)
 }
 
 pub type ProgramEnv {
@@ -97,5 +99,6 @@ pub type ProgramEnv {
     port: Int,
     host: String,
     allowed_ips: List(mist.IpAddress),
+    is_nginx: Bool,
   )
 }

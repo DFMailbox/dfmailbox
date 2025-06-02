@@ -31,6 +31,7 @@ pub fn handle_request(
   ctx: ctx.Context,
 ) -> Response {
   use req <- web.middleware(req)
+  echo req.headers
 
   // NOTE: an h_ function cannot take a request
   case wisp.path_segments(req) {
@@ -41,6 +42,9 @@ pub fn handle_request(
           case seg {
             [] -> {
               case req.method {
+                http.Get -> {
+                  todo as "Get plot info"
+                }
                 http.Post -> {
                   use json <- wisp.require_json(req)
                   h_plot.register_plot(json, auth, ctx)

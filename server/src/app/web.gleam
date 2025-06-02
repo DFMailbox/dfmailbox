@@ -48,12 +48,18 @@ pub fn auth_midleware(
   handle_request: fn(Authentication) -> wisp.Response,
 ) -> wisp.Response {
   let headers = req.headers |> dict.from_list
-  let user_agent = dict.get(headers, "user-agent")
 
   let auth =
     result.lazy_unwrap(
       mist.get_client_info(mist.body)
-        |> process_plot_auth(ctx.conn, _, user_agent, ctx.df_ips),
+        |> process_plot_auth(
+          ctx.conn,
+          _,
+          dict.get(headers, "user-agent"),
+          dict.get(headers, "x-real-ip"),
+          ctx.df_ips,
+          ctx.nginx,
+        ),
       fn() {
         result.unwrap(
           process_ext_auth(ctx.conn, dict.get(headers, "x-api-key")),
@@ -100,10 +106,42 @@ fn process_plot_auth(
   conn: pog.Connection,
   info: Result(mist.ConnectionInfo, Nil),
   user_agent: Result(String, Nil),
+  x_real_ip: Result(String, Nil),
   df_ips: List(mist.IpAddress),
+  is_nginx: Bool,
 ) -> Result(Authentication, Nil) {
   use info <- result.try(info)
-  use <- bool.guard(!list.contains(df_ips, info.ip_address), Error(Nil))
+  let ok = case is_nginx {
+    True -> {
+      case x_real_ip {
+        Ok(ip) -> {
+          case string.split(ip, ".") {
+            [a, b, c, d] -> {
+              {
+                use a <- result.try(int.parse(a))
+                use b <- result.try(int.parse(b))
+                use c <- result.try(int.parse(c))
+                use d <- result.try(int.parse(d))
+                mist.IpV4(a, b, c, d)
+                |> list.contains(df_ips, _)
+                |> Ok
+              }
+              |> result.replace_error(False)
+              |> result.unwrap_both()
+            }
+            _ -> False
+          }
+        }
+
+        Error(Nil) -> False
+      }
+    }
+    False -> {
+      list.contains(df_ips, info.ip_address)
+    }
+  }
+  echo ok
+  use <- bool.guard(!ok, Error(Nil))
 
   use user_agent <- result.try(user_agent)
   use #(plot_id, username) <- result.try(parse_user_agent(user_agent))
