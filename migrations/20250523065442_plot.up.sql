@@ -1,3 +1,4 @@
+SET timezone TO 'UTC';
 CREATE TABLE plot (
     id INTEGER PRIMARY KEY NOT NULL, -- DF plot id
     owner UUID NOT NULL,

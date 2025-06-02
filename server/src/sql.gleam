@@ -73,6 +73,45 @@ WHERE public_key = $1
   |> pog.execute(db)
 }
 
+/// A row you get from running the `get_api_keys` query
+/// defined in `./src/sql/get_api_keys.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type GetApiKeysRow {
+  GetApiKeysRow(
+    id: Int,
+    plot: Int,
+    hashed_key: BitArray,
+    created_at: pog.Timestamp,
+  )
+}
+
+/// Runs the `get_api_keys` query
+/// defined in `./src/sql/get_api_keys.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn get_api_keys(db, arg_1) {
+  let decoder = {
+    use id <- decode.field(0, decode.int)
+    use plot <- decode.field(1, decode.int)
+    use hashed_key <- decode.field(2, decode.bit_array)
+    use created_at <- decode.field(3, pog.timestamp_decoder())
+    decode.success(GetApiKeysRow(id:, plot:, hashed_key:, created_at:))
+  }
+
+  "SELECT id, plot, hashed_key, created_at FROM api_key
+WHERE plot = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// Runs the `add_api_key` query
 /// defined in `./src/sql/add_api_key.sql`.
 ///
@@ -151,6 +190,24 @@ VALUES ($1, $2)
   |> pog.query
   |> pog.parameter(pog.bytea(arg_1))
   |> pog.parameter(pog.text(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `purge_api_keys` query
+/// defined in `./src/sql/purge_api_keys.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn purge_api_keys(db, arg_1) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "DELETE FROM api_key
+WHERE plot = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

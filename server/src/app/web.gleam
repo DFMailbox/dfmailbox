@@ -1,4 +1,5 @@
 import app/ctx
+import app/handle/helper
 import ed25519/public_key
 import gleam/bit_array
 import gleam/bool
@@ -157,11 +158,11 @@ pub type GenericPlot {
   GenericPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
 }
 
-pub fn match_generic(auth: Authentication) -> Result(GenericPlot, Nil) {
+pub fn match_generic(auth: Authentication) -> Result(GenericPlot, wisp.Response) {
   case auth {
     LocalPlot(a, b, c) -> Ok(GenericPlot(a, b, c))
     LocalPlotApi(a, b, c, _) -> Ok(GenericPlot(a, b, c))
-    _ -> Error(Nil)
+    _ -> Error(helper.construct_error("Plot auth required", 403))
   }
 }
 

@@ -44,8 +44,7 @@ pub fn enqueue(
   use body <- helper.guard_json(payload, mailbox.post_mailbox_body_decoder())
   use plot <- helper.try_res(
     auth
-    |> web.match_generic()
-    |> result.replace_error(helper.construct_error("Plot auth required", 403)),
+    |> web.match_generic(),
   )
   let mailbox = case
     ctx.mailbox_map
@@ -80,8 +79,7 @@ pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) 
   use msg_id <- helper.require_id(query)
   use plot <- helper.try_res(
     auth
-    |> web.match_generic()
-    |> result.replace_error(helper.construct_error("Plot auth required", 403)),
+    |> web.match_generic(),
   )
   let mailbox = case
     ctx.mailbox_map

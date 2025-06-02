@@ -81,12 +81,15 @@ pub fn handle_request(
             ["api-key"] ->
               case req.method {
                 http.Get -> {
-                  todo
+                  h_api_key.get_all(auth, ctx)
                 }
                 http.Post -> {
                   h_api_key.add(auth, ctx)
                 }
-                _ -> todo
+                http.Delete -> {
+                  h_api_key.purge_keys(auth, ctx)
+                }
+                _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
 
             _ -> wisp.not_found()
