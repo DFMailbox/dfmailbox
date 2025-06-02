@@ -1,3 +1,4 @@
+import birl
 import dfjson
 import gleam/erlang/process.{type Subject}
 import gleam/json
@@ -9,19 +10,24 @@ type Store {
 }
 
 pub type StoreRow {
-  StoreRow(id: Int, val: dfjson.DFJson)
+  StoreRow(id: Int, time: birl.Time, plot_origin: Int, val: dfjson.DFJson)
 }
 
 pub fn encode_store_row(store_row: StoreRow) -> json.Json {
-  let StoreRow(id:, val:) = store_row
-  json.object([#("id", json.int(id)), #("val", dfjson.encode_df_json(val))])
+  let StoreRow(id:, time:, plot_origin:, val:) = store_row
+  json.object([
+    #("id", json.int(id)),
+    #("time", time |> birl.to_unix |> json.int()),
+    #("plot_origin", json.int(plot_origin)),
+    #("val", dfjson.encode_df_json(val)),
+  ])
 }
 
 pub type PlotMailbox =
   process.Subject(PlotMailboxQuery)
 
 pub type PlotMailboxQuery {
-  Post(value: List(dfjson.DFJson), reply_with: Subject(Int))
+  Post(value: List(dfjson.DFJson), origin: Int, reply_with: Subject(Int))
   // Dequeue doesn't exist because it isn't idempotent, this matters because this will be exposed in the REST API
   Peek(after: Int, reply_with: Subject(List(StoreRow)))
   Cleanup(before_at: Int)
@@ -41,10 +47,17 @@ fn handle_message(
       Store(..store, list: list)
       |> actor.continue()
     }
-    Post(vals, reply) -> {
+    Post(vals, origin, reply) -> {
       process.send(reply, store.id)
       let vals =
-        list.index_map(vals, fn(x, i) { StoreRow(id: store.id + i, val: x) })
+        list.index_map(vals, fn(x, i) {
+          StoreRow(
+            id: store.id + i,
+            val: x,
+            plot_origin: origin,
+            time: birl.utc_now(),
+          )
+        })
       let new = list.append(store.list, vals)
       Store(list: new, id: store.id + { list.length(vals) }) |> actor.continue()
     }
@@ -76,8 +89,12 @@ pub fn cleanup(mailbox: PlotMailbox, keep_after_id: Int) {
 
 /// Add items to the end of the mailbox.
 /// Returns the msg_id before the insertions
-pub fn post(mailbox: PlotMailbox, items: List(dfjson.DFJson)) -> Int {
-  actor.call(mailbox, Post(value: items, reply_with: _), timeout)
+pub fn post(
+  mailbox: PlotMailbox,
+  items: List(dfjson.DFJson),
+  plot_origin origin: Int,
+) -> Int {
+  actor.call(mailbox, Post(value: items, reply_with: _, origin:), timeout)
 }
 
 /// Get all items after a specific id

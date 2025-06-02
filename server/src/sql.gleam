@@ -23,6 +23,69 @@ WHERE id = $1;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `list_trust` query
+/// defined in `./src/sql/list_trust.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type ListTrustRow {
+  ListTrustRow(trusted: Int)
+}
+
+/// Runs the `list_trust` query
+/// defined in `./src/sql/list_trust.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn list_trust(db, arg_1) {
+  let decoder = {
+    use trusted <- decode.field(0, decode.int)
+    decode.success(ListTrustRow(trusted:))
+  }
+
+  "SELECT trusted FROM trust
+WHERE plot = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `check_trust` query
+/// defined in `./src/sql/check_trust.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type CheckTrustRow {
+  CheckTrustRow(id: Int)
+}
+
+/// Runs the `check_trust` query
+/// defined in `./src/sql/check_trust.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn check_trust(db, arg_1, arg_2) {
+  let decoder = {
+    use id <- decode.field(0, decode.int)
+    decode.success(CheckTrustRow(id:))
+  }
+
+  "SELECT id FROM trust
+WHERE plot = $1 AND trusted = $2;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.parameter(pog.int(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// Runs the `register_plot_int` query
 /// defined in `./src/sql/register_plot_int.sql`.
 ///
@@ -194,6 +257,26 @@ VALUES ($1, $2)
   |> pog.execute(db)
 }
 
+/// Runs the `trust_plot` query
+/// defined in `./src/sql/trust_plot.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn trust_plot(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "INSERT INTO trust (plot, trusted)
+VALUES ($1, $2)
+ON CONFLICT (plot, trusted) DO NOTHING;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.parameter(pog.int(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// Runs the `purge_api_keys` query
 /// defined in `./src/sql/purge_api_keys.sql`.
 ///
@@ -253,6 +336,25 @@ WHERE hashed_key = sha256($1);
 "
   |> pog.query
   |> pog.parameter(pog.bytea(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `remove_trust` query
+/// defined in `./src/sql/remove_trust.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn remove_trust(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "DELETE FROM trust
+WHERE plot = $1 AND trusted = $2;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.parameter(pog.int(arg_2))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

@@ -3,6 +3,7 @@ import app/handle/h_api_key
 import app/handle/h_mailbox
 import app/handle/h_plot
 import app/handle/h_server
+import app/handle/h_trust
 import app/handle/helper
 import app/web
 import gleam/http
@@ -91,7 +92,21 @@ pub fn handle_request(
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
-
+            ["trust"] ->
+              case req.method {
+                http.Get -> {
+                  h_trust.get_trusted(auth, ctx)
+                }
+                http.Post -> {
+                  use json <- wisp.require_json(req)
+                  h_trust.trust_plot(json, auth, ctx)
+                }
+                http.Delete -> {
+                  use json <- wisp.require_json(req)
+                  h_trust.untrust_plot(json, auth, ctx)
+                }
+                _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
+              }
             _ -> wisp.not_found()
           }
         }
@@ -119,7 +134,8 @@ pub fn handle_request(
             }
             ["mailbox"] -> {
               use <- wisp.require_method(req, http.Post)
-              todo as "post"
+              use json <- wisp.require_json(req)
+              h_mailbox.enqueue_other(plot_id, json, auth, ctx)
             }
             _ -> wisp.not_found()
           }
