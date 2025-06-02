@@ -14,7 +14,7 @@ fi
 
 read -p "Secret key (default: generate): " DFM_SECRET_KEY
 if [ -z "$DFM_SECRET_KEY" ]; then
-  DFM_SECRET_KEY=$(openssl genpkey -algorithm ED25519 | awk '/^-----BEGIN PRIVATE KEY-----/{p=1;next}/^-----END PRIVATE KEY-----/{p=0}p')
+  DFM_SECRET_KEY=$(openssl genpkey -algorithm ED25519 -outform DER | tail -c 32 | openssl base64 -A)
 fi
 
 if [ -f $ENV_FILE ]; then
@@ -28,9 +28,10 @@ fi
 # Write env file
 cat << EOF > "$ENV_FILE"
 DFM_POSTGRES_PASSWORD="$DFM_POSTGRES_PASSWORD"
+DFM_POSTGRES_PORT=5432
+DFM_PORT="$DFM_PORT"
 DFM_HOST="$DFM_HOST"
 DFM_SECRET_KEY="$DFM_SECRET_KEY"
-DFM_PORT="$DFM_PORT"
 
 # Change this to 'dev' for development
 TARGET="prod"
