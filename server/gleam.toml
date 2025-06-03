@@ -28,6 +28,7 @@ ed25519 = ">= 1.4.3 and < 2.0.0"
 gleam_httpc = ">= 4.1.1 and < 5.0.0"
 gleam_regexp = ">= 1.1.1 and < 2.0.0"
 birl = ">= 1.8.0 and < 2.0.0"
+gl_dfjson = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
