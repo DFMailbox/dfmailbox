@@ -1,13 +1,10 @@
 import actor/profiles
 import app/ctx
-import app/handle/decoders
 import app/handle/helper
+import app/struct/plot
 import app/web
 import ed25519/public_key
-import gleam/bit_array
 import gleam/dynamic
-import gleam/dynamic/decode
-import gleam/function
 import gleam/json
 import gleam/list
 import gleam/option
@@ -16,50 +13,38 @@ import gleam/string
 import pog
 import sql
 import wisp
-import youid/uuid
 
-pub fn get_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
+pub fn update_plot(json: dynamic.Dynamic, ctx: ctx.Context) {
+  todo
+}
+
+pub fn get_plot(auth: web.Authentication, ctx: ctx.Context) {
+  use plot <- helper.try_res(web.match_generic(auth))
+  get_other_plot(plot.id, ctx)
+}
+
+pub fn get_other_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
   use plot_row <- helper.guard_db(sql.get_plot(ctx.conn, id))
   let plot = list.first(plot_row.rows)
   case plot {
     Ok(it) -> {
-      let instance = case it.public_key {
-        option.Some(key) -> {
-          let assert option.Some(domain) = it.domain
-          option.Some(
-            json.object([
-              #(
-                "public_key",
-                json.string(key |> bit_array.base64_encode(False)),
-              ),
-              #("domain", json.string(domain)),
-            ]),
-          )
-        }
-        option.None -> option.None
-      }
-      json.object([
-        #("id", json.int(it.id)),
-        #("owner", json.string(it.owner |> uuid.to_string)),
-        #("instance", json.nullable(instance, of: function.identity)),
-      ])
-      |> json.to_string_tree
+      plot.GetPlotResponse(
+        plot_id: it.id,
+        owner: it.owner,
+        public_key: it.public_key
+          |> option.map(fn(a) {
+            let assert Ok(k) = public_key.deserialize_all(a)
+            k
+          }),
+        domain: it.domain,
+        mailbox_msg_id: it.mailbox_msg_id,
+      )
+      |> plot.encode_get_plot_response()
+      |> json.to_string_tree()
       |> wisp.json_response(200)
     }
     Error(_) -> wisp.not_found()
   }
-}
-
-pub type RegisterPlotBody {
-  RegisterPlotBody(instance: option.Option(public_key.PublicKey))
-}
-
-fn register_plot_body_decoder() -> decode.Decoder(RegisterPlotBody) {
-  use instance <- decode.field(
-    "instance",
-    decode.optional(decoders.decode_public_key()),
-  )
-  decode.success(RegisterPlotBody(instance:))
 }
 
 pub fn register_plot(
@@ -73,7 +58,7 @@ pub fn register_plot(
       Error(helper.construct_error("No authentication present", 401))
     _ -> Error(helper.construct_error("Plot already registered", 403))
   })
-  use body <- helper.guard_json(json, register_plot_body_decoder())
+  use body <- helper.guard_json(json, plot.register_plot_body_decoder())
 
   let assert Ok(uuid) = profiles.fetch(ctx.profiles, name)
 

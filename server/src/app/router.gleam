@@ -43,14 +43,20 @@ pub fn handle_request(
             [] -> {
               case req.method {
                 http.Get -> {
-                  todo as "Get plot info"
+                  h_plot.get_plot(auth, ctx)
                 }
                 http.Post -> {
                   use json <- wisp.require_json(req)
                   h_plot.register_plot(json, auth, ctx)
                 }
-                http.Put -> todo as "Update instance"
-                http.Delete -> todo as "Forget instance"
+                http.Put -> {
+                  use json <- wisp.require_json(req)
+                  // h_plot.update_plot()
+                  todo
+                }
+                http.Delete -> {
+                  todo
+                }
                 _ -> wisp.method_not_allowed([http.Put, http.Post, http.Delete])
               }
             }
@@ -134,7 +140,7 @@ pub fn handle_request(
           case seg {
             [] -> {
               use <- wisp.require_method(req, http.Get)
-              h_plot.get_plot(plot_id, ctx)
+              h_plot.get_other_plot(plot_id, ctx)
             }
             ["mailbox"] -> {
               use <- wisp.require_method(req, http.Post)
