@@ -8,7 +8,7 @@ pub type PostMailboxBody {
 }
 
 pub fn post_mailbox_body_decoder() -> decode.Decoder(PostMailboxBody) {
-  use data <- decode.field("data", decode.list(dfjson.df_json_decoder()))
+  use data <- decode.then(decode.list(dfjson.df_json_decoder()))
   decode.success(PostMailboxBody(data:))
 }
 
