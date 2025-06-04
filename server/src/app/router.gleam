@@ -176,8 +176,15 @@ pub fn handle_request(
           }
         _ -> wisp.not_found()
       }
-    _ -> {
+    ["robots.txt"] -> {
+      wisp.response(200)
+      |> wisp.set_body(
+        "User-agent: *\nDisallow: /" |> string_tree.from_string |> wisp.Text,
+      )
+    }
+    [] -> {
       wisp.html_response("dfmailbox" |> string_tree.from_string, 200)
     }
+    _ -> wisp.not_found()
   }
 }
