@@ -31,7 +31,6 @@ pub fn handle_request(
   ctx: ctx.Context,
 ) -> Response {
   use req <- web.middleware(req)
-  echo req.headers
 
   // NOTE: an h_ function cannot take a request
   case wisp.path_segments(req) {

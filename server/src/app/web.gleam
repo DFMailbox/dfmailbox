@@ -76,7 +76,7 @@ fn process_ext_auth(
 ) -> Result(Authentication, Nil) {
   use key <- result.try(key)
   let bits = key |> bit_array.from_string()
-  let assert Ok(plot) = sql.plot_from_api_key(conn, bits) |> echo
+  let assert Ok(plot) = sql.plot_from_api_key(conn, bits)
   use plot <- result.try(list.first(plot.rows))
 
   case plot.public_key {
@@ -140,7 +140,6 @@ fn process_plot_auth(
       list.contains(df_ips, info.ip_address)
     }
   }
-  echo ok
   use <- bool.guard(!ok, Error(Nil))
 
   use user_agent <- result.try(user_agent)
