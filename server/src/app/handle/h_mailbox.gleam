@@ -6,14 +6,23 @@ import app/struct/mailbox
 import app/web
 import gleam/bool
 import gleam/dynamic
+import gleam/int
 import gleam/json
 import gleam/list
+import gleam/option
 import gleam/result
 import sql
 import wisp
 
 pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
   use msg_id <- helper.require_id(query)
+  let limit =
+    list.key_find(query, "limit")
+    // maybe this should be a 400
+    |> result.map(int.parse)
+    |> result.flatten
+    |> option.from_result()
+
   use plot <- helper.try_res(
     auth
     |> web.match_generic()
@@ -31,8 +40,14 @@ pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
     }
   }
 
-  plot_mailbox.peek(mailbox, msg_id)
-  |> json.array(of: plot_mailbox.encode_store_row)
+  let items = plot_mailbox.peek(mailbox, msg_id, limit)
+
+  mailbox.PeekMailboxResponse(
+    items: items.result,
+    until: items.until,
+    current_id: items.current_id,
+  )
+  |> mailbox.encode_peek_mailbox_response()
   |> json.to_string_tree()
   |> wisp.json_response(200)
 }

@@ -3,7 +3,9 @@ import dfjson
 import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/list
+import gleam/option
 import gleam/otp/actor
+import gleam/result
 
 type Store {
   Store(list: List(StoreRow), id: Int)
@@ -23,13 +25,17 @@ pub fn encode_store_row(store_row: StoreRow) -> json.Json {
   ])
 }
 
+pub type PeekResult {
+  PeekResult(result: List(StoreRow), until: Int, current_id: Int)
+}
+
 pub type PlotMailbox =
   process.Subject(PlotMailboxQuery)
 
 pub type PlotMailboxQuery {
   Post(value: List(dfjson.DFJson), origin: Int, reply_with: Subject(Int))
   // Dequeue doesn't exist because it isn't idempotent, this matters because this will be exposed in the REST API
-  Peek(after: Int, reply_with: Subject(List(StoreRow)))
+  Peek(after: Int, limit: option.Option(Int), reply_with: Subject(PeekResult))
   Cleanup(before_at: Int)
   Shutdown
 }
@@ -62,15 +68,22 @@ fn handle_message(
       let new = list.append(store.list, vals)
       Store(list: new, id: new_id) |> actor.continue()
     }
-    Peek(after, reply) -> {
-      let #(_, list) =
+    Peek(after, limit, reply) -> {
+      let #(_passed, list) =
         store.list
         |> list.split_while(fn(x) { x.id <= after })
-      list
+      let list = case limit {
+        option.Some(limit) -> list.split(list, limit).0
+        option.None -> list
+      }
+
+      let until =
+        list.last(list) |> result.map(fn(x) { x.id }) |> result.unwrap(after)
+
+      PeekResult(result: list, until:, current_id: store.id)
       |> process.send(reply, _)
 
-      store
-      |> actor.continue()
+      actor.continue(store)
     }
     Shutdown -> actor.Stop(process.Normal)
   }
@@ -99,8 +112,8 @@ pub fn post(
 }
 
 /// Get all items after a specific id
-pub fn peek(mailbox: PlotMailbox, after_id after: Int) {
-  actor.call(mailbox, Peek(after:, reply_with: _), timeout)
+pub fn peek(mailbox: PlotMailbox, after: Int, limit: option.Option(Int)) {
+  actor.call(mailbox, Peek(after:, reply_with: _, limit:), timeout)
 }
 
 pub fn shutdown(cache: PlotMailbox) {

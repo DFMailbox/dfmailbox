@@ -165,7 +165,6 @@ pub fn handle_request(
               h_server.identity_key(json, ctx)
             }
             http.Delete -> {
-              use json <- wisp.require_json(req)
               todo
             }
             _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
