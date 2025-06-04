@@ -48,7 +48,8 @@ fn handle_message(
       |> actor.continue()
     }
     Post(vals, origin, reply) -> {
-      process.send(reply, store.id)
+      let new_id = store.id + { list.length(vals) }
+      process.send(reply, new_id)
       let vals =
         list.index_map(vals, fn(x, i) {
           StoreRow(
@@ -59,7 +60,7 @@ fn handle_message(
           )
         })
       let new = list.append(store.list, vals)
-      Store(list: new, id: store.id + { list.length(vals) }) |> actor.continue()
+      Store(list: new, id: new_id) |> actor.continue()
     }
     Peek(after, reply) -> {
       let #(_, list) =
