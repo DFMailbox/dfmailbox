@@ -2,7 +2,7 @@
   description = "Gleam Erlang dev environment";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-old.url = "github:NixOS/nixpkgs/nixos-24.11";
   };
 
