@@ -144,7 +144,7 @@ pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) 
     |> result.map(int.parse)
     |> result.flatten
     |> option.from_result()
-  let return = list.key_find(query, "return") |> result.is_ok()
+  let return = list.key_find(query, "return")
 
   use plot <- helper.try_res(
     auth
@@ -163,11 +163,11 @@ pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) 
   }
 
   case return {
-    True -> {
+    Error(Nil) -> {
       plot_mailbox.cleanup(mailbox, msg_id)
       wisp.ok()
     }
-    False -> {
+    Ok(_) -> {
       let items = plot_mailbox.recieve(mailbox, msg_id, limit, True)
 
       mailbox.PeekMailboxResponse(
