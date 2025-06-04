@@ -40,7 +40,7 @@ pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
     }
   }
 
-  let items = plot_mailbox.peek(mailbox, msg_id, limit)
+  let items = plot_mailbox.recieve(mailbox, msg_id, limit, False)
 
   mailbox.PeekMailboxResponse(
     items: items.result,
@@ -82,7 +82,7 @@ pub fn enqueue_other(
 
   let id =
     mailbox
-    |> plot_mailbox.post(body.data, plot.id)
+    |> plot_mailbox.send(body.data, plot.id)
 
   use _ <- helper.guard_db(sql.set_mailbox_msg_id(
     ctx.conn,
@@ -121,7 +121,7 @@ pub fn enqueue(
 
   let id =
     mailbox
-    |> plot_mailbox.post(body.data, plot.id)
+    |> plot_mailbox.send(body.data, plot.id)
 
   use _ <- helper.guard_db(sql.set_mailbox_msg_id(
     ctx.conn,
@@ -138,6 +138,14 @@ pub fn enqueue(
 
 pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
   use msg_id <- helper.require_id(query)
+  let limit =
+    list.key_find(query, "limit")
+    // maybe this should be a 400
+    |> result.map(int.parse)
+    |> result.flatten
+    |> option.from_result()
+  let return = list.key_find(query, "return") |> result.is_ok()
+
   use plot <- helper.try_res(
     auth
     |> web.match_generic(),
@@ -153,7 +161,23 @@ pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) 
       box
     }
   }
-  plot_mailbox.cleanup(mailbox, msg_id)
 
-  wisp.ok()
+  case return {
+    True -> {
+      plot_mailbox.cleanup(mailbox, msg_id)
+      wisp.ok()
+    }
+    False -> {
+      let items = plot_mailbox.recieve(mailbox, msg_id, limit, True)
+
+      mailbox.PeekMailboxResponse(
+        items: items.result,
+        until: items.until,
+        current_id: items.current_id,
+      )
+      |> mailbox.encode_peek_mailbox_response()
+      |> json.to_string_tree()
+      |> wisp.json_response(200)
+    }
+  }
 }

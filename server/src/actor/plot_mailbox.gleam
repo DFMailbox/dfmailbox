@@ -25,17 +25,22 @@ pub fn encode_store_row(store_row: StoreRow) -> json.Json {
   ])
 }
 
-pub type PeekResult {
-  PeekResult(result: List(StoreRow), until: Int, current_id: Int)
+pub type ReadResult {
+  ReadResult(result: List(StoreRow), until: Int, current_id: Int)
 }
 
 pub type PlotMailbox =
   process.Subject(PlotMailboxQuery)
 
 pub type PlotMailboxQuery {
-  Post(value: List(dfjson.DFJson), origin: Int, reply_with: Subject(Int))
+  Send(value: List(dfjson.DFJson), origin: Int, reply_with: Subject(Int))
   // Dequeue doesn't exist because it isn't idempotent, this matters because this will be exposed in the REST API
-  Peek(after: Int, limit: option.Option(Int), reply_with: Subject(PeekResult))
+  Receive(
+    after: Int,
+    limit: option.Option(Int),
+    reply_with: Subject(ReadResult),
+    cleanup: Bool,
+  )
   Cleanup(before_at: Int)
   Shutdown
 }
@@ -45,15 +50,7 @@ fn handle_message(
   store: Store,
 ) -> actor.Next(PlotMailboxQuery, Store) {
   case message {
-    Cleanup(id) -> {
-      let #(_, list) =
-        store.list
-        |> list.split_while(fn(x) { x.id <= id })
-
-      Store(..store, list: list)
-      |> actor.continue()
-    }
-    Post(vals, origin, reply) -> {
+    Send(vals, origin, reply) -> {
       let new_id = store.id + { list.length(vals) }
       process.send(reply, new_id)
       let vals =
@@ -68,22 +65,38 @@ fn handle_message(
       let new = list.append(store.list, vals)
       Store(list: new, id: new_id) |> actor.continue()
     }
-    Peek(after, limit, reply) -> {
+    Receive(after, limit, reply, cleanup) -> {
+      // duped code with Peek
       let #(_passed, list) =
         store.list
         |> list.split_while(fn(x) { x.id <= after })
-      let list = case limit {
+
+      let send_list = case limit {
         option.Some(limit) -> list.split(list, limit).0
         option.None -> list
       }
 
       let until =
-        list.last(list) |> result.map(fn(x) { x.id }) |> result.unwrap(after)
+        list.last(send_list)
+        |> result.map(fn(x) { x.id })
+        |> result.unwrap(after)
 
-      PeekResult(result: list, until:, current_id: store.id)
+      ReadResult(result: send_list, until:, current_id: store.id)
       |> process.send(reply, _)
 
-      actor.continue(store)
+      case cleanup {
+        True -> Store(..store, list:)
+        False -> store
+      }
+      |> actor.continue()
+    }
+    Cleanup(id) -> {
+      let #(_passed, list) =
+        store.list
+        |> list.split_while(fn(x) { x.id <= id })
+
+      Store(..store, list: list)
+      |> actor.continue()
     }
     Shutdown -> actor.Stop(process.Normal)
   }
@@ -103,17 +116,26 @@ pub fn cleanup(mailbox: PlotMailbox, keep_after_id: Int) {
 
 /// Add items to the end of the mailbox.
 /// Returns the msg_id before the insertions
-pub fn post(
+pub fn send(
   mailbox: PlotMailbox,
   items: List(dfjson.DFJson),
   plot_origin origin: Int,
 ) -> Int {
-  actor.call(mailbox, Post(value: items, reply_with: _, origin:), timeout)
+  actor.call(mailbox, Send(value: items, reply_with: _, origin:), timeout)
 }
 
-/// Get all items after a specific id
-pub fn peek(mailbox: PlotMailbox, after: Int, limit: option.Option(Int)) {
-  actor.call(mailbox, Peek(after:, reply_with: _, limit:), timeout)
+/// Get all items after a specific id and maybe run cleanup
+pub fn recieve(
+  mailbox: PlotMailbox,
+  after: Int,
+  limit: option.Option(Int),
+  peek: Bool,
+) {
+  actor.call(
+    mailbox,
+    Receive(after:, reply_with: _, limit:, cleanup: peek),
+    timeout,
+  )
 }
 
 pub fn shutdown(cache: PlotMailbox) {
