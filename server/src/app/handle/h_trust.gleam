@@ -15,16 +15,12 @@ pub fn trust_plot(
 ) {
   use body <- helper.guard_json(json, trust.trust_plot_body_decoder())
   use plot <- helper.try_res(web.match_generic(auth))
-  use res <- helper.guard_db_constraint(
-    sql.trust_plot(ctx.conn, plot.id, body.trust),
+  use _res <- helper.guard_db_constraint(
+    sql.trust_plot(ctx.conn, plot.id, body.trusted),
     "trust_trusted_fkey",
     helper.construct_error("Plot doesn't exist", 400),
   )
-  case res.count {
-    0 -> wisp.response(409)
-    1 -> wisp.created()
-    _ -> panic as "unreachable"
-  }
+  wisp.ok()
 }
 
 pub fn untrust_plot(
@@ -34,12 +30,8 @@ pub fn untrust_plot(
 ) {
   use body <- helper.guard_json(json, trust.trust_plot_body_decoder())
   use plot <- helper.try_res(web.match_generic(auth))
-  use res <- helper.guard_db(sql.remove_trust(ctx.conn, plot.id, body.trust))
-  case res.count {
-    0 -> wisp.response(409)
-    1 -> wisp.created()
-    _ -> panic as "unreachable"
-  }
+  use _res <- helper.guard_db(sql.remove_trust(ctx.conn, plot.id, body.trusted))
+  wisp.ok()
 }
 
 pub fn get_trusted(auth: web.Authentication, ctx: ctx.Context) {

@@ -1,3 +1,4 @@
 INSERT INTO trust (plot, trusted)
-VALUES ($1, $2)
+SELECT $1, unnest($2::int[])
 ON CONFLICT (plot, trusted) DO NOTHING;
+

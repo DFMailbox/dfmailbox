@@ -2,12 +2,12 @@ import gleam/dynamic/decode
 import gleam/json
 
 pub type TrustPlotBody {
-  TrustPlotBody(trust: Int)
+  TrustPlotBody(trusted: List(Int))
 }
 
 pub fn trust_plot_body_decoder() -> decode.Decoder(TrustPlotBody) {
-  use trust <- decode.field("trust", decode.int)
-  decode.success(TrustPlotBody(trust:))
+  use trusted <- decode.then(decode.list(decode.int))
+  decode.success(TrustPlotBody(trusted:))
 }
 
 pub type GetTrustsResponse {
