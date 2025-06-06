@@ -8,9 +8,6 @@ import gleam/dynamic
 import gleam/json
 import gleam/list
 import gleam/option
-import gleam/result
-import gleam/string
-import pog
 import sql
 import wisp
 
@@ -72,28 +69,12 @@ pub fn register_plot(
       )
     option.None -> sql.register_plot_int(ctx.conn, plot_id, uuid)
   }
-  use res <- helper.try_res(
-    res
-    |> result.map_error(fn(err) {
-      case err {
-        pog.ConstraintViolated(_, constraint, _) -> {
-          case constraint {
-            "plot_instance_fkey" -> {
-              helper.construct_error("instance not registered", 409)
-            }
-            _ -> {
-              wisp.log_error(err |> string.inspect)
-              helper.construct_error("database error", 500)
-            }
-          }
-        }
-        _ -> {
-          wisp.log_error(err |> string.inspect)
-          helper.construct_error("database error", 500)
-        }
-      }
-    }),
+  use res <- helper.guard_db_constraint(
+    res,
+    "plot_instance_fkey",
+    helper.construct_error("instance not registered", 409),
   )
+
   case echo res.count {
     1 -> wisp.created()
     _ -> panic as "unreachable error: auth should block this"

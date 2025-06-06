@@ -27,6 +27,31 @@ pub fn guard_db(
   }
 }
 
+pub fn guard_db_constraint(
+  result: Result(a, pog.QueryError),
+  constraint: String,
+  error_response: wisp.Response,
+  body: fn(a) -> wisp.Response,
+) {
+  case result {
+    Ok(it) -> body(it)
+    Error(err) -> {
+      let error = fn() {
+        wisp.log_error(err |> string.inspect)
+        construct_error("database error", 500)
+      }
+      case err {
+        pog.ConstraintViolated(_, constr, _) ->
+          case constr == constraint {
+            True -> error_response
+            False -> error()
+          }
+        _ -> error()
+      }
+    }
+  }
+}
+
 pub fn get_id(query: Query) -> Result(Int, String) {
   use id <- result.try(
     query
