@@ -36,9 +36,11 @@ pub fn run_query(
         let mailbox = case to {
           option.Some(to) -> {
             let assert Ok(trust) = sql.check_trust(ctx.conn, to, plot.id)
-            use <- bool.guard(trust.count != 1, Error("Not trusted"))
-            ctx.get_mailbox_lazy(ctx, to)
-            |> result.map_error(fn(_) { panic as "Not found, unreachable" })
+            let mailbox =
+              ctx.get_mailbox_lazy(ctx, to)
+              |> result.replace_error("plot_not_exists")
+            use <- bool.guard(trust.count != 1, Error("plot_not_trusted"))
+            mailbox
           }
           option.None -> Ok(self_mailbox)
         }
@@ -100,10 +102,7 @@ fn mailbox_reply_to_json(mailbox_reply: MailboxReply) -> json.Json {
         #("msg_id", json.int(msg_id)),
       ])
     ReplyError(msg:) ->
-      json.object([
-        #("type", json.string("reply_error")),
-        #("msg", json.string(msg)),
-      ])
+      json.object([#("type", json.string("error")), #("msg", json.string(msg))])
     Cleanup -> json.object([#("type", json.string("cleanup"))])
   }
 }
