@@ -29,6 +29,15 @@ pub type ReadResult {
   ReadResult(result: List(StoreRow), until: Int, current_id: Int)
 }
 
+pub fn read_result_to_json(read_result: ReadResult) -> json.Json {
+  let ReadResult(result:, until:, current_id:) = read_result
+  json.object([
+    #("result", json.array(result, encode_store_row)),
+    #("until", json.int(until)),
+    #("current_id", json.int(current_id)),
+  ])
+}
+
 pub type PlotMailbox =
   process.Subject(PlotMailboxQuery)
 
@@ -130,7 +139,7 @@ pub fn recieve(
   after: Int,
   limit: option.Option(Int),
   peek: Bool,
-) {
+) -> ReadResult {
   actor.call(
     mailbox,
     Receive(after:, reply_with: _, limit:, cleanup: peek),

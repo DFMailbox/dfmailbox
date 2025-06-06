@@ -14,7 +14,7 @@ import pog
 import sql
 import wisp
 
-pub fn update_plot(json: dynamic.Dynamic, ctx: ctx.Context) {
+pub fn update_plot(json: dynamic.Dynamic, ctx: ctx.Context) -> wisp.Response {
   todo
 }
 

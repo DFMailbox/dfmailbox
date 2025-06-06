@@ -2,6 +2,7 @@ import app/ctx
 import app/handle/h_api_key
 import app/handle/h_mailbox
 import app/handle/h_plot
+import app/handle/h_query
 import app/handle/h_server
 import app/handle/h_trust
 import app/handle/helper
@@ -50,8 +51,7 @@ pub fn handle_request(
                 }
                 http.Put -> {
                   use json <- wisp.require_json(req)
-                  // h_plot.update_plot()
-                  todo
+                  h_plot.update_plot(json, ctx)
                 }
                 http.Delete -> {
                   todo
@@ -88,6 +88,11 @@ pub fn handle_request(
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
+            ["query"] -> {
+              use <- wisp.require_method(req, http.Post)
+              use json <- wisp.require_json(req)
+              h_query.run_query(json, auth, ctx)
+            }
             ["api-key"] ->
               case req.method {
                 http.Get -> {
