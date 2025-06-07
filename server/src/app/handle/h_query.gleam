@@ -45,9 +45,18 @@ pub fn run_query(
           option.None -> Ok(self_mailbox)
         }
         case mailbox {
-          Ok(mailbox) ->
-            plot_mailbox.send(mailbox, value, plot.id)
+          Ok(mailbox) -> {
+            let res = plot_mailbox.send(mailbox, value, plot.id)
+
+            let assert Ok(_) =
+              sql.set_mailbox_msg_id(
+                ctx.conn,
+                to |> option.unwrap(plot.id),
+                res,
+              )
+            res
             |> Enqueue
+          }
           Error(err) -> err |> ReplyError
         }
       }
