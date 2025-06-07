@@ -11,6 +11,7 @@ pub type Cache(k, v) =
 pub type Message(k, v) {
   Set(key: k, value: v)
   Get(key: k, reply_with: Subject(Result(v, Nil)))
+  Remove(key: k)
   Shutdown
 }
 
@@ -25,6 +26,10 @@ fn handle_message(
     }
     Set(key, value) -> {
       dict.insert(store, key, value)
+      |> actor.continue()
+    }
+    Remove(key) -> {
+      dict.drop(store, [key])
       |> actor.continue()
     }
     Shutdown -> actor.Stop(process.Normal)
@@ -44,6 +49,10 @@ pub fn get(cache: Cache(k, v), key: k) {
 
 pub fn set(cache: Cache(k, v), key: k, mailbox: v) {
   actor.send(cache, Set(key, mailbox))
+}
+
+pub fn remove(cache: Cache(k, v), key: k) {
+  actor.send(cache, Remove(key))
 }
 
 pub fn shutdown(cache: Cache(k, v)) {

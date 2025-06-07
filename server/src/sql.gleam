@@ -223,9 +223,13 @@ pub fn get_plot(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use domain <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(
-      GetPlotRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
-    )
+    decode.success(GetPlotRow(
+      id:,
+      owner:,
+      public_key:,
+      domain:,
+      mailbox_msg_id:,
+    ))
   }
 
   "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM plot
@@ -325,9 +329,13 @@ pub fn plot_from_api_key(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use domain <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(
-      PlotFromApiKeyRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
-    )
+    decode.success(PlotFromApiKeyRow(
+      id:,
+      owner:,
+      public_key:,
+      domain:,
+      mailbox_msg_id:,
+    ))
   }
 
   "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM api_key
@@ -356,6 +364,45 @@ WHERE plot = $1 AND trusted = ANY($2::INTEGER[]);
   |> pog.query
   |> pog.parameter(pog.int(arg_1))
   |> pog.parameter(pog.array(fn(value) { pog.int(value) }, arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `update_plot_instance_int` query
+/// defined in `./src/sql/update_plot_instance_int.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn update_plot_instance_int(db, arg_1) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "UPDATE plot
+SET instance = NULL
+WHERE id = $1
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `update_plot_instance_ext` query
+/// defined in `./src/sql/update_plot_instance_ext.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn update_plot_instance_ext(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "UPDATE plot
+SET instance = $1
+WHERE id = $2
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
+  |> pog.parameter(pog.int(arg_2))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

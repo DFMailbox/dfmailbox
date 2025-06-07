@@ -51,7 +51,7 @@ pub fn handle_request(
                 }
                 http.Put -> {
                   use json <- wisp.require_json(req)
-                  h_plot.update_plot(json, ctx)
+                  h_plot.update_plot(json, auth, ctx)
                 }
                 http.Delete -> {
                   todo

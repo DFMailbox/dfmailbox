@@ -43,5 +43,13 @@ pub fn encode_get_plot_response(get_plot_response: GetPlotResponse) -> json.Json
 }
 
 pub type UpdatePlotBody {
-  UpdatePlotBody
+  UpdatePlotBody(instance: option.Option(public_key.PublicKey))
+}
+
+pub fn update_plot_body_decoder() -> decode.Decoder(UpdatePlotBody) {
+  use instance <- decode.field(
+    "instance",
+    decode.optional(decoders.decode_public_key()),
+  )
+  decode.success(UpdatePlotBody(instance:))
 }
