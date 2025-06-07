@@ -15,7 +15,7 @@ pub fn ping_sign(
   let challenge = uuid.v4()
   let req =
     instance.request(domain)
-    |> request.set_path("/v0/instance")
+    |> request.set_path("/v0/federation/instance")
     |> request.set_query([#("challenge", challenge |> uuid.to_string)])
   use res <- result.try(httpc.send(req) |> result.map_error(HttpError))
   use <- bool.guard(res.status != 200, Error(UnexpectedStatus(res.status)))
