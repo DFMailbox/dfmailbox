@@ -59,7 +59,7 @@ pub fn request(domain: InstanceDomain) -> request.Request(String) {
   let req =
     request.new()
     |> request.set_host(domain.host)
-    |> request.set_scheme(http.Http)
+    |> request.set_scheme(http.Https)
   let req = case domain.port {
     option.None -> req
     option.Some(port) -> req |> request.set_port(port)
