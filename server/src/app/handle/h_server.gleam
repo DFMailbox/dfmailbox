@@ -31,12 +31,13 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
     ctx.private_key
     |> public_key.derive_key()
 
-  let sig =
-    signature.create(
-      ctx.private_key,
-      public_key,
-      challenge |> uuid.to_bit_array(),
+  let challenge =
+    bit_array.append(
+      instance.to_bit_array(ctx.instance),
+      uuid.to_bit_array(challenge),
     )
+
+  let sig = signature.create(ctx.private_key, public_key, challenge)
 
   server.encode_signing_response(server.SigningResponse(public_key, sig))
   |> json.to_string_tree()
@@ -59,7 +60,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
       case row.domain {
         option.Some(domain) -> {
           use domain <- result.try(
-            instance.new(domain)
+            instance.parse(domain)
             |> result.replace_error(helper.construct_error(
               "Domain isn't valid",
               409,
