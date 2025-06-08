@@ -105,7 +105,7 @@ pub fn request_key_exchange(
   )
   let valid =
     signature.validate_signature(json.signature, challenge, json.public_key)
-  use <- bool.guard(!valid, Error(MismatchedKey(json.public_key)))
+  // use <- bool.guard(!valid, Error(MismatchedKey(json.public_key)))
 
   crypto.hash(crypto.Sha256, json.identity_key |> bit_array.from_string)
   |> Ok

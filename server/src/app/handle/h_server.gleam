@@ -92,6 +92,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   let challenge = instance.generate_challenge(body.host, body.challenge)
 
   let sig = signature.create(ctx.private_key, my_pubkey, challenge)
+
   let source =
     crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
   let actual_key = crypto.hash(crypto.Sha256, source |> bit_array.from_string)
