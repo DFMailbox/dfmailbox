@@ -62,6 +62,7 @@ pub fn request_key_exchange(
     instance.request(domain)
     |> request.set_path("/v0/federation/instance")
     |> request.set_method(http.Post)
+    |> request.prepend_header("content-type", "application/json")
     |> request.set_body(
       body |> server.identify_instance_body_to_json |> json.to_string,
     )
