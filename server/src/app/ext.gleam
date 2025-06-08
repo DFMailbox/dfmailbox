@@ -25,7 +25,10 @@ pub fn ping_sign(
     |> request.set_query([#("challenge", uuid |> uuid.to_string)])
     |> request.set_method(http.Get)
   use res <- result.try(httpc.send(req) |> result.map_error(HttpError))
-  use <- bool.guard(res.status != 200, Error(UnexpectedStatus(res.status)))
+  use <- bool.guard(
+    res.status != 200,
+    Error(UnexpectedStatus(res.status, res.body)),
+  )
 
   use json <- result.try(
     json.parse(res.body, server.signing_response_decoder())
@@ -40,7 +43,7 @@ pub fn ping_sign(
 pub type PingInstanceError {
   HttpError(httpc.HttpError)
   JsonDecodeError(json.DecodeError)
-  UnexpectedStatus(Int)
+  UnexpectedStatus(Int, String)
   MismatchedKey(public_key.PublicKey)
 }
 
@@ -67,7 +70,10 @@ pub fn request_key_exchange(
       body |> server.identify_instance_body_to_json |> json.to_string,
     )
   use res <- result.try(httpc.send(req) |> result.map_error(HttpError))
-  use <- bool.guard(res.status != 200, Error(UnexpectedStatus(res.status)))
+  use <- bool.guard(
+    res.status != 200,
+    Error(UnexpectedStatus(res.status, res.body)),
+  )
 
   use json <- result.try(
     json.parse(res.body, server.identify_instance_response_decoder())
