@@ -14,6 +14,18 @@ pub type IdentifyInstanceBody {
   )
 }
 
+pub fn identify_instance_body_to_json(
+  identify_instance_body: IdentifyInstanceBody,
+) -> json.Json {
+  let IdentifyInstanceBody(public_key:, host:, challenge:) =
+    identify_instance_body
+  json.object([
+    #("public_key", public_key |> public_key.to_base64() |> json.string),
+    #("host", instance.instance_domain_to_json(host)),
+    #("challenge", challenge |> uuid.to_string |> json.string),
+  ])
+}
+
 pub fn identify_instance_body_decoder() -> decode.Decoder(IdentifyInstanceBody) {
   use public_key <- decode.field("public_key", decoders.decode_public_key())
   use host <- decode.field("host", instance.decode_instance())
@@ -27,6 +39,19 @@ pub type IdentifyInstanceResponse {
     public_key: public_key.PublicKey,
     signature: signature.Signature,
   )
+}
+
+pub fn identify_instance_response_decoder() -> decode.Decoder(
+  IdentifyInstanceResponse,
+) {
+  use identity_key <- decode.field("identity_key", decode.string)
+  use public_key <- decode.field("public_key", decoders.decode_public_key())
+  use signature <- decode.field("signature", decoders.decode_signature())
+  decode.success(IdentifyInstanceResponse(
+    identity_key:,
+    public_key:,
+    signature:,
+  ))
 }
 
 pub fn encode_identify_instance_response(

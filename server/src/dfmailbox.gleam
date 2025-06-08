@@ -38,6 +38,8 @@ pub fn main() -> Nil {
       private_key:,
       profiles: profile_cache,
       df_ips: env.allowed_ips,
+      identity_key_map: cache.new(),
+      ext_identity_key_map: cache.new(),
       mailbox_map: cache.new(),
       nginx: env.is_nginx,
       instance: env.host,

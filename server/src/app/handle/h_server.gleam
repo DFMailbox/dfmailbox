@@ -1,3 +1,4 @@
+import actor/cache
 import app/ctx
 import app/ext
 import app/handle/helper
@@ -100,11 +101,13 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
       my_pubkey,
       body.challenge |> uuid.to_bit_array(),
     )
-  let key = crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
-  // TODO: Register identity key
+  let source =
+    crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
+  let actual_key = crypto.hash(crypto.Sha256, source |> bit_array.from_string)
+  cache.set(ctx.identity_key_map, actual_key, requester_key)
 
   server.encode_identify_instance_response(server.IdentifyInstanceResponse(
-    identity_key: key,
+    identity_key: source,
     signature: sig,
     public_key: my_pubkey,
   ))

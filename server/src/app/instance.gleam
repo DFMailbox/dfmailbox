@@ -3,6 +3,7 @@ import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
 import gleam/int
+import gleam/json
 import gleam/option
 import gleam/regexp
 import gleam/result
@@ -12,6 +13,14 @@ import sql
 /// Misnomer probably gonna change
 pub type InstanceDomain {
   InstanceDomain(host: String, port: option.Option(Int))
+}
+
+pub fn instance_domain_to_json(instance_domain: InstanceDomain) -> json.Json {
+  let InstanceDomain(host:, port:) = instance_domain
+  case port {
+    option.None -> json.string(host)
+    option.Some(port) -> json.string(host <> ":" <> int.to_string(port))
+  }
 }
 
 pub fn to_bit_array(instance: InstanceDomain) {
