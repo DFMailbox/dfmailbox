@@ -32,7 +32,7 @@ pub fn ping_sign(
 
   use json <- result.try(
     json.parse(res.body, server.signing_response_decoder())
-    |> result.map_error(JsonDecodeError),
+    |> result.map_error(JsonDecodeError(_, res.body)),
   )
   let valid =
     signature.validate_signature(json.signature, challenge, json.server_key)
@@ -42,7 +42,7 @@ pub fn ping_sign(
 
 pub type PingInstanceError {
   HttpError(httpc.HttpError)
-  JsonDecodeError(json.DecodeError)
+  JsonDecodeError(json.DecodeError, String)
   UnexpectedStatus(Int, String)
   MismatchedKey(public_key.PublicKey)
 }
@@ -77,7 +77,7 @@ pub fn request_key_exchange(
 
   use json <- result.try(
     json.parse(res.body, server.identify_instance_response_decoder())
-    |> result.map_error(JsonDecodeError),
+    |> result.map_error(JsonDecodeError(_, res.body)),
   )
   let valid =
     signature.validate_signature(json.signature, challenge, json.public_key)
