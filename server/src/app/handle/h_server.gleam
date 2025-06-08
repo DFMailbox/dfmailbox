@@ -105,11 +105,12 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   let actual_key = crypto.hash(crypto.Sha256, source |> bit_array.from_string)
   cache.set(ctx.identity_key_map, actual_key, requester_key)
 
-  server.encode_identify_instance_response(server.IdentifyInstanceResponse(
+  server.IdentifyInstanceResponse(
     identity_key: source,
     signature: sig,
     public_key: my_pubkey,
-  ))
+  )
+  |> server.encode_identify_instance_response()
   |> json.to_string_tree()
   |> wisp.json_response(200)
 }

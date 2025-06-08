@@ -61,7 +61,7 @@ pub fn encode_identify_instance_response(
     identify_instance_response
   json.object([
     #("identity_key", json.string(identity_key)),
-    #("server_key", json.string(public_key |> public_key.to_base64_url())),
+    #("public_key", json.string(public_key |> public_key.to_base64_url())),
     #("signature", json.string(signature |> signature.to_base64())),
   ])
 }
