@@ -15,7 +15,6 @@ import gleam/json
 import gleam/list
 import gleam/option
 import gleam/result
-import gleam/string
 import sql
 import wisp
 import youid/uuid
@@ -50,7 +49,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   use requester_key <- helper.try_res(
     ext.ping_sign(body.host)
     |> result.map_error(fn(err) {
-      helper.construct_error(err |> string.inspect, 400)
+      helper.construct_error(err |> ext.serialize_ping_error, 400)
     }),
   )
   let req_key_bits = requester_key |> public_key.serialize_to_bits

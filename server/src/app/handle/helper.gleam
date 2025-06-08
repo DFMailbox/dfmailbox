@@ -115,7 +115,7 @@ pub fn guard_json(
   |> result.unwrap_both
 }
 
-fn decode_error_format(err: decode.DecodeError) {
+pub fn decode_error_format(err: decode.DecodeError) {
   "Decode failed in '"
   <> string.join(err.path, ", ")
   <> "' expected '"

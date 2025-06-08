@@ -1,3 +1,4 @@
+import app/handle/helper
 import app/instance
 import app/struct/server
 import ed25519/public_key
@@ -8,8 +9,11 @@ import gleam/crypto
 import gleam/http
 import gleam/http/request
 import gleam/httpc
+import gleam/int
 import gleam/json
+import gleam/list
 import gleam/result
+import gleam/string
 import youid/uuid
 
 pub fn ping_sign(
@@ -45,6 +49,28 @@ pub type PingInstanceError {
   JsonDecodeError(json.DecodeError, String)
   UnexpectedStatus(Int, String)
   MismatchedKey(public_key.PublicKey)
+}
+
+pub fn serialize_ping_error(err: PingInstanceError) {
+  case err {
+    HttpError(err) -> string.inspect(err)
+    JsonDecodeError(err, body) -> {
+      body
+      <> " with error "
+      <> {
+        case err {
+          json.UnableToDecode(err) ->
+            list.map(err, helper.decode_error_format)
+            |> json.array(of: json.string)
+            |> json.to_string
+          err -> string.inspect(err)
+        }
+      }
+    }
+    MismatchedKey(key) -> "Invalid key: " <> public_key.to_base64_url(key)
+    UnexpectedStatus(code, body) ->
+      "Invalid code " <> int.to_string(code) <> " with body " <> body
+  }
 }
 
 pub fn request_key_exchange(
