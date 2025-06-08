@@ -9,6 +9,7 @@ import gleam/regexp
 import gleam/result
 import gleam/string
 import sql
+import youid/uuid
 
 /// Misnomer probably gonna change
 pub type InstanceDomain {
@@ -23,7 +24,11 @@ pub fn instance_domain_to_json(instance_domain: InstanceDomain) -> json.Json {
   }
 }
 
-pub fn to_bit_array(instance: InstanceDomain) {
+pub fn generate_challenge(instance: InstanceDomain, uuid: uuid.Uuid) {
+  bit_array.append(to_bit_array(instance), uuid.to_bit_array(uuid))
+}
+
+fn to_bit_array(instance: InstanceDomain) {
   case instance.port {
     option.None -> bit_array.from_string(instance.host)
     option.Some(port) ->

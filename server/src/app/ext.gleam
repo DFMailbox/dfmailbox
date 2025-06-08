@@ -20,8 +20,7 @@ pub fn ping_sign(
   domain: instance.InstanceDomain,
 ) -> Result(public_key.PublicKey, PingInstanceError) {
   let uuid = uuid.v4()
-  let challenge =
-    bit_array.append(instance.to_bit_array(domain), uuid.to_bit_array(uuid))
+  let challenge = instance.generate_challenge(domain, uuid)
 
   let req =
     instance.request(domain)
@@ -79,8 +78,7 @@ pub fn request_key_exchange(
   my_host: instance.InstanceDomain,
 ) {
   let uuid = uuid.v4()
-  let challenge =
-    bit_array.append(instance.to_bit_array(domain), uuid.to_bit_array(uuid))
+  let challenge = instance.generate_challenge(domain, uuid)
   let body =
     server.IdentifyInstanceBody(
       public_key: server_key,

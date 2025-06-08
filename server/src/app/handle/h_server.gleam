@@ -31,11 +31,7 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
     ctx.private_key
     |> public_key.derive_key()
 
-  let challenge =
-    bit_array.append(
-      instance.to_bit_array(ctx.instance),
-      uuid.to_bit_array(challenge),
-    )
+  let challenge = instance.generate_challenge(ctx.instance, challenge)
 
   let sig = signature.create(ctx.private_key, public_key, challenge)
 
@@ -93,11 +89,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     my_pubkey != body.public_key,
     helper.construct_error("Not my key", 400),
   )
-  let challenge =
-    bit_array.append(
-      uuid.to_bit_array(body.challenge),
-      instance.to_bit_array(body.host),
-    )
+  let challenge = instance.generate_challenge(body.host, body.challenge)
 
   let sig = signature.create(ctx.private_key, my_pubkey, challenge)
   let source =
