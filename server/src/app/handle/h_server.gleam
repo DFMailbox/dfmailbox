@@ -93,13 +93,13 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     my_pubkey != body.public_key,
     helper.construct_error("Not my key", 400),
   )
-
-  let sig =
-    signature.create(
-      ctx.private_key,
-      my_pubkey,
-      body.challenge |> uuid.to_bit_array(),
+  let challenge =
+    bit_array.append(
+      uuid.to_bit_array(body.challenge),
+      instance.to_bit_array(body.host),
     )
+
+  let sig = signature.create(ctx.private_key, my_pubkey, challenge)
   let source =
     crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
   let actual_key = crypto.hash(crypto.Sha256, source |> bit_array.from_string)
