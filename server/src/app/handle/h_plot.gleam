@@ -46,6 +46,42 @@ pub fn update_plot(
   wisp.ok()
 }
 
+pub fn delete_plot(auth: web.Authentication, ctx: ctx.Context) {
+  case auth {
+    web.LocalPlot(id:, owner: _, mailbox_msg_id: _)
+    | web.LocalPlotApi(id:, owner: _, mailbox_msg_id: _, api_key: _) -> {
+      let _nil =
+        ctx.mailbox_map
+        |> cache.get(id)
+        |> result.map(plot_mailbox.shutdown)
+      let Nil = cache.remove(ctx.mailbox_map, id)
+
+      let _ = sql.purge_api_keys(ctx.conn, id)
+      let _ = sql.delete_trust(ctx.conn, id)
+      let _ = sql.delete_plot(ctx.conn, id)
+      wisp.ok()
+    }
+
+    web.RemotePlot(id:, owner: _, instance: _, mailbox_msg_id: _)
+    | web.RemotePlotApi(
+        id:,
+        owner: _,
+        instance: _,
+        mailbox_msg_id: _,
+        api_key: _,
+      ) -> {
+      let _ = sql.purge_api_keys(ctx.conn, id)
+      let _ = sql.delete_trust(ctx.conn, id)
+      let _ = sql.delete_plot(ctx.conn, id)
+      wisp.ok()
+    }
+    web.UnregisteredPlot(_, _) ->
+      helper.construct_error("Plot not registered", 409)
+
+    web.NoAuth -> helper.construct_error("No auth present", 401)
+  }
+}
+
 pub fn get_plot(auth: web.Authentication, ctx: ctx.Context) {
   use plot <- helper.try_res(web.match_generic(auth))
   get_other_plot(plot.id, ctx)

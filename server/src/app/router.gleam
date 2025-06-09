@@ -55,9 +55,15 @@ pub fn handle_request(
                   h_plot.update_plot(json, auth, ctx)
                 }
                 http.Delete -> {
-                  todo
+                  h_plot.delete_plot(auth, ctx)
                 }
-                _ -> wisp.method_not_allowed([http.Put, http.Post, http.Delete])
+                _ ->
+                  wisp.method_not_allowed([
+                    http.Get,
+                    http.Put,
+                    http.Post,
+                    http.Delete,
+                  ])
               }
             }
             ["whoami"] -> {

@@ -86,6 +86,24 @@ WHERE plot = $1 AND trusted = $2;
   |> pog.execute(db)
 }
 
+/// Runs the `delete_trust` query
+/// defined in `./src/sql/delete_trust.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn delete_trust(db, arg_1) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "DELETE FROM trust
+WHERE plot = $1 OR trusted = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// Runs the `register_plot_int` query
 /// defined in `./src/sql/register_plot_int.sql`.
 ///
@@ -223,13 +241,9 @@ pub fn get_plot(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use domain <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(GetPlotRow(
-      id:,
-      owner:,
-      public_key:,
-      domain:,
-      mailbox_msg_id:,
-    ))
+    decode.success(
+      GetPlotRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
+    )
   }
 
   "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM plot
@@ -329,13 +343,9 @@ pub fn plot_from_api_key(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use domain <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(PlotFromApiKeyRow(
-      id:,
-      owner:,
-      public_key:,
-      domain:,
-      mailbox_msg_id:,
-    ))
+    decode.success(
+      PlotFromApiKeyRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
+    )
   }
 
   "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM api_key
@@ -380,6 +390,25 @@ pub fn update_plot_instance_int(db, arg_1) {
   "UPDATE plot
 SET instance = NULL
 WHERE id = $1
+"
+  |> pog.query
+  |> pog.parameter(pog.int(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `delete_plot` query
+/// defined in `./src/sql/delete_plot.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn delete_plot(db, arg_1) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "DELETE FROM plot
+WHERE id = $1;
+
 "
   |> pog.query
   |> pog.parameter(pog.int(arg_1))
