@@ -16,32 +16,33 @@ pub type InstanceDomain {
   InstanceDomain(host: String, port: option.Option(Int))
 }
 
-pub fn instance_domain_to_json(instance_domain: InstanceDomain) -> json.Json {
-  let InstanceDomain(host:, port:) = instance_domain
-  case port {
-    option.None -> json.string(host)
-    option.Some(port) -> json.string(host <> ":" <> int.to_string(port))
-  }
-}
-
-pub fn generate_challenge(instance: InstanceDomain, uuid: uuid.Uuid) {
-  bit_array.append(to_bit_array(instance), uuid.to_bit_array(uuid))
-}
-
-fn to_bit_array(instance: InstanceDomain) {
-  case instance.port {
-    option.None -> bit_array.from_string(instance.host)
-    option.Some(port) ->
-      bit_array.from_string(instance.host <> ":" <> int.to_string(port))
-  }
-}
-
 pub fn decode_instance() -> decode.Decoder(InstanceDomain) {
   use str <- decode.then(decode.string)
   case parse(str) {
     Ok(inst) -> decode.success(inst)
     Error(_) -> decode.failure(InstanceDomain("", option.None), "domain")
   }
+}
+
+pub fn instance_domain_to_json(instance_domain: InstanceDomain) -> json.Json {
+  instance_domain
+  |> to_string()
+  |> json.string()
+}
+
+pub fn to_string(instance_domain: InstanceDomain) -> String {
+  let InstanceDomain(host:, port:) = instance_domain
+  case port {
+    option.None -> host
+    option.Some(port) -> host <> ":" <> int.to_string(port)
+  }
+}
+
+pub fn generate_challenge(instance: InstanceDomain, uuid: uuid.Uuid) {
+  bit_array.append(
+    to_string(instance) |> bit_array.from_string,
+    uuid.to_bit_array(uuid),
+  )
 }
 
 pub fn regex() -> regexp.Regexp {

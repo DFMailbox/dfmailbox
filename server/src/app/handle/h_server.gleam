@@ -35,7 +35,8 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
 
   let sig = signature.create(ctx.private_key, public_key, challenge)
 
-  server.encode_signing_response(server.SigningResponse(public_key, sig))
+  server.SigningResponse(public_key, sig, ctx.instance)
+  |> server.signing_response_to_json
   |> json.to_string_tree()
   |> wisp.json_response(200)
 }
@@ -89,7 +90,8 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     my_pubkey != body.public_key,
     helper.construct_error("Not my key", 400),
   )
-  let challenge = instance.generate_challenge(body.host, body.challenge)
+
+  let challenge = instance.generate_challenge(ctx.instance, body.challenge)
 
   let sig = signature.create(ctx.private_key, my_pubkey, challenge)
 
@@ -102,6 +104,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     identity_key: source,
     signature: sig,
     public_key: my_pubkey,
+    domain: ctx.instance,
   )
   |> server.encode_identify_instance_response()
   |> json.to_string_tree()

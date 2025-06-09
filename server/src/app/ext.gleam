@@ -48,6 +48,7 @@ pub type PingInstanceError {
   JsonDecodeError(json.DecodeError, String)
   UnexpectedStatus(Int, String)
   MismatchedKey(public_key.PublicKey)
+  Other(String)
 }
 
 pub fn serialize_ping_error(err: PingInstanceError) {
@@ -69,6 +70,7 @@ pub fn serialize_ping_error(err: PingInstanceError) {
     MismatchedKey(key) -> "Invalid key: " <> public_key.to_base64_url(key)
     UnexpectedStatus(code, body) ->
       "Invalid code " <> int.to_string(code) <> " with body " <> body
+    Other(str) -> str
   }
 }
 
@@ -103,9 +105,18 @@ pub fn request_key_exchange(
     json.parse(res.body, server.identify_instance_response_decoder())
     |> result.map_error(JsonDecodeError(_, res.body)),
   )
+  use <- bool.guard(
+    json.domain != domain,
+    Error(Other(
+      "Expected domain "
+      <> instance.to_string(json.domain)
+      <> " got domain "
+      <> instance.to_string(domain),
+    )),
+  )
   let valid =
     signature.validate_signature(json.signature, challenge, json.public_key)
-  // use <- bool.guard(!valid, Error(MismatchedKey(json.public_key)))
+  use <- bool.guard(!valid, Error(MismatchedKey(json.public_key)))
 
   crypto.hash(crypto.Sha256, json.identity_key |> bit_array.from_string)
   |> Ok
