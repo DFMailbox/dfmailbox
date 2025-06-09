@@ -1,3 +1,4 @@
+import actor/cache
 import app/ctx
 import app/ext
 import app/handle/helper
@@ -14,7 +15,6 @@ import gleam/json
 import gleam/list
 import gleam/option
 import gleam/result
-import gleam/string
 import sql
 import wisp
 import youid/uuid
@@ -31,14 +31,12 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
     ctx.private_key
     |> public_key.derive_key()
 
-  let sig =
-    signature.create(
-      ctx.private_key,
-      public_key,
-      challenge |> uuid.to_bit_array(),
-    )
+  let challenge = instance.generate_challenge(ctx.instance, challenge)
 
-  server.encode_signing_response(server.SigningResponse(public_key, sig))
+  let sig = signature.create(ctx.private_key, public_key, challenge)
+
+  server.SigningResponse(public_key, sig, ctx.instance)
+  |> server.signing_response_to_json
   |> json.to_string_tree()
   |> wisp.json_response(200)
 }
@@ -48,7 +46,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   use requester_key <- helper.try_res(
     ext.ping_sign(body.host)
     |> result.map_error(fn(err) {
-      helper.construct_error(err |> string.inspect, 400)
+      helper.construct_error(err |> ext.serialize_ping_error, 400)
     }),
   )
   let req_key_bits = requester_key |> public_key.serialize_to_bits
@@ -59,7 +57,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
       case row.domain {
         option.Some(domain) -> {
           use domain <- result.try(
-            instance.new(domain)
+            instance.parse(domain)
             |> result.replace_error(helper.construct_error(
               "Domain isn't valid",
               409,
@@ -93,20 +91,22 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     helper.construct_error("Not my key", 400),
   )
 
-  let sig =
-    signature.create(
-      ctx.private_key,
-      my_pubkey,
-      body.challenge |> uuid.to_bit_array(),
-    )
-  let key = crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
-  // TODO: Register identity key
+  let challenge = instance.generate_challenge(ctx.instance, body.challenge)
 
-  server.encode_identify_instance_response(server.IdentifyInstanceResponse(
-    identity_key: key,
+  let sig = signature.create(ctx.private_key, my_pubkey, challenge)
+
+  let source =
+    crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
+  let actual_key = crypto.hash(crypto.Sha256, source |> bit_array.from_string)
+  cache.set(ctx.identity_key_map, actual_key, requester_key)
+
+  server.IdentifyInstanceResponse(
+    identity_key: source,
     signature: sig,
     public_key: my_pubkey,
-  ))
+    domain: ctx.instance,
+  )
+  |> server.encode_identify_instance_response()
   |> json.to_string_tree()
   |> wisp.json_response(200)
 }

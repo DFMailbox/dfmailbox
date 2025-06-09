@@ -1,31 +1,48 @@
+import gleam/bit_array
 import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
 import gleam/int
+import gleam/json
 import gleam/option
 import gleam/regexp
 import gleam/result
 import gleam/string
 import sql
+import youid/uuid
 
-pub opaque type InstanceDomain {
+/// Misnomer probably gonna change
+pub type InstanceDomain {
   InstanceDomain(host: String, port: option.Option(Int))
-}
-
-pub fn port(instance: InstanceDomain) {
-  instance.port
-}
-
-pub fn host(instance: InstanceDomain) {
-  instance.host
 }
 
 pub fn decode_instance() -> decode.Decoder(InstanceDomain) {
   use str <- decode.then(decode.string)
-  case new(str) {
+  case parse(str) {
     Ok(inst) -> decode.success(inst)
     Error(_) -> decode.failure(InstanceDomain("", option.None), "domain")
   }
+}
+
+pub fn instance_domain_to_json(instance_domain: InstanceDomain) -> json.Json {
+  instance_domain
+  |> to_string()
+  |> json.string()
+}
+
+pub fn to_string(instance_domain: InstanceDomain) -> String {
+  let InstanceDomain(host:, port:) = instance_domain
+  case port {
+    option.None -> host
+    option.Some(port) -> host <> ":" <> int.to_string(port)
+  }
+}
+
+pub fn generate_challenge(instance: InstanceDomain, uuid: uuid.Uuid) {
+  bit_array.append(
+    to_string(instance) |> bit_array.from_string,
+    uuid.to_bit_array(uuid),
+  )
 }
 
 pub fn regex() -> regexp.Regexp {
@@ -38,7 +55,7 @@ pub fn regex() -> regexp.Regexp {
   regex
 }
 
-pub fn new(str: String) -> Result(InstanceDomain, Nil) {
+pub fn parse(str: String) -> Result(InstanceDomain, Nil) {
   case regexp.check(regex(), str) {
     True -> {
       case string.split_once(str, ":") {

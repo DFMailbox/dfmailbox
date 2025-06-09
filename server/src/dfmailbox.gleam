@@ -1,6 +1,7 @@
 import actor/cache
 import actor/profiles
 import app/ctx
+import app/instance
 import app/router
 import dot_env
 import dot_env/env
@@ -37,8 +38,11 @@ pub fn main() -> Nil {
       private_key:,
       profiles: profile_cache,
       df_ips: env.allowed_ips,
+      identity_key_map: cache.new(),
+      ext_identity_key_map: cache.new(),
       mailbox_map: cache.new(),
       nginx: env.is_nginx,
+      instance: env.host,
     )
 
   let assert Ok(_subj) =
@@ -55,7 +59,10 @@ fn get_env() -> ProgramEnv {
   let assert Ok(secret_key) = env.get_string("SECRET_KEY")
   let assert Ok(database_url) = env.get_string("DATABASE_URL")
   let assert Ok(port) = env.get_int("PORT")
-  let assert Ok(host) = env.get_string("HOST")
+  let assert Ok(host) =
+    env.get_then("HOST", fn(host) {
+      instance.parse(host) |> result.replace_error("Host is invalid")
+    })
   let assert Ok(extra_ips) = case env.get_string("ALLOWED_IPS") {
     Ok(env) -> {
       use <- bool.guard(string.is_empty(env), Ok([]))
@@ -89,15 +96,15 @@ fn get_env() -> ProgramEnv {
 
   let df_ips = [mist.IpV4(51, 222, 245, 229), ..extra_ips]
 
-  ProgramEnv(secret_key, database_url, port, host, df_ips, nginx)
+  ProgramEnv(secret_key, database_url, host, port, df_ips, nginx)
 }
 
 pub type ProgramEnv {
   ProgramEnv(
     secret_key: String,
     database_url: String,
+    host: instance.InstanceDomain,
     port: Int,
-    host: String,
     allowed_ips: List(mist.IpAddress),
     is_nginx: Bool,
   )

@@ -1,7 +1,9 @@
 import actor/cache
 import actor/plot_mailbox
 import actor/profiles
+import app/instance
 import ed25519/private_key
+import ed25519/public_key
 import gleam/list
 import gleam/result
 import mist
@@ -15,6 +17,9 @@ pub type Context {
     profiles: profiles.Cache,
     df_ips: List(mist.IpAddress),
     mailbox_map: cache.Cache(Int, plot_mailbox.PlotMailbox),
+    identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
+    ext_identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
+    instance: instance.InstanceDomain,
     nginx: Bool,
   )
 }

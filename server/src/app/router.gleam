@@ -1,5 +1,6 @@
 import app/ctx
 import app/handle/h_api_key
+import app/handle/h_instance
 import app/handle/h_mailbox
 import app/handle/h_plot
 import app/handle/h_query
@@ -154,6 +155,23 @@ pub fn handle_request(
             _ -> wisp.not_found()
           }
         }
+        ["instance"] ->
+          case req.method {
+            http.Get -> {
+              todo
+              // let query = wisp.get_query(req)
+              // h_instance.get_instance(query)
+            }
+            http.Post -> {
+              use json <- wisp.require_json(req)
+              h_instance.introduce(json, ctx)
+            }
+            http.Delete -> {
+              todo
+              // h_instance.mark_key_as_compromised
+            }
+            _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
+          }
         ["federation", ..segs] ->
           case segs {
             ["instance"] ->
