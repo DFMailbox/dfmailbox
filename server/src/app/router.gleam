@@ -164,9 +164,8 @@ pub fn handle_request(
         ["instance"] ->
           case req.method {
             http.Get -> {
-              todo
-              // let query = wisp.get_query(req)
-              // h_instance.get_instance(query)
+              let query = wisp.get_query(req)
+              h_instance.get_instance(query, ctx)
             }
             http.Post -> {
               use json <- wisp.require_json(req)

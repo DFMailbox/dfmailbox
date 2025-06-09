@@ -123,6 +123,38 @@ VALUES ($1, $2, 0)
   |> pog.execute(db)
 }
 
+/// A row you get from running the `get_instance` query
+/// defined in `./src/sql/get_instance.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type GetInstanceRow {
+  GetInstanceRow(domain: Option(String))
+}
+
+/// Runs the `get_instance` query
+/// defined in `./src/sql/get_instance.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn get_instance(db, arg_1) {
+  let decoder = {
+    use domain <- decode.field(0, decode.optional(decode.string))
+    decode.success(GetInstanceRow(domain:))
+  }
+
+  "SELECT domain FROM known_instance
+WHERE public_key = $1;
+
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `get_domain` query
 /// defined in `./src/sql/get_domain.sql`.
 ///
