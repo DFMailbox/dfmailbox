@@ -99,8 +99,25 @@ pub fn construct_error(msg: String, code: Int) -> wisp.Response {
   )
 }
 
+pub fn replace_construct_error(
+  result: Result(a, b),
+  msg: String,
+  code: Int,
+) -> Result(a, wisp.Response) {
+  result
+  |> result.replace_error(construct_error(msg, code))
+}
+
 pub fn try_res(res: Result(a, wisp.Response), body: fn(a) -> wisp.Response) {
   result.map(res, body)
+  |> result.unwrap_both
+}
+
+pub fn try_res_error(
+  res: Result(wisp.Response, b),
+  body: fn(b) -> wisp.Response,
+) {
+  result.map_error(res, body)
   |> result.unwrap_both
 }
 

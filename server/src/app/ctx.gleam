@@ -38,7 +38,10 @@ pub fn get_mailbox(ctx: Context, id: Int, msg_id: Int) {
   }
 }
 
-pub fn get_mailbox_lazy(ctx: Context, id: Int) {
+pub fn get_mailbox_lazy(
+  ctx: Context,
+  id: Int,
+) -> Result(plot_mailbox.PlotMailbox, Nil) {
   case
     ctx.mailbox_map
     |> cache.get(id)

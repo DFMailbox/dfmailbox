@@ -1,3 +1,4 @@
+import actor/cache
 import app/ctx
 import app/handle/helper
 import ed25519/public_key
@@ -39,6 +40,36 @@ pub fn log_request(
       wisp.log_request(req, handler)
     }
   }
+}
+
+pub fn auth_federation(
+  req: wisp.Request,
+  ctx: ctx.Context,
+  handle_request: fn(public_key.PublicKey) -> wisp.Response,
+) -> wisp.Response {
+  case get_token(req, ctx) {
+    Ok(key) -> handle_request(key)
+    Error(err) -> err
+  }
+}
+
+fn get_token(
+  req: wisp.Request,
+  ctx: ctx.Context,
+) -> Result(public_key.PublicKey, wisp.Response) {
+  use token <- result.try(
+    list.key_find(req.headers, "x-identity-token")
+    |> helper.replace_construct_error("x-identity-token not found", 401),
+  )
+  use b64_token <- result.try(
+    bit_array.base64_decode(token)
+    |> helper.replace_construct_error("identity token is not base6", 401),
+  )
+  use key <- result.try(
+    cache.get(ctx.ext_identity_key_map, b64_token)
+    |> helper.replace_construct_error("identity token invalid", 401),
+  )
+  Ok(key)
 }
 
 pub fn auth_midleware(
