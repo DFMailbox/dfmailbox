@@ -38,9 +38,9 @@ pub fn ping_sign(
     |> result.map_error(JsonDecodeError(_, res.body)),
   )
   let valid =
-    signature.validate_signature(json.signature, challenge, json.server_key)
-  use <- bool.guard(!valid, Error(MismatchedKey(json.server_key)))
-  Ok(json.server_key)
+    signature.validate_signature(json.signature, challenge, json.public_key)
+  use <- bool.guard(!valid, Error(MismatchedKey(json.public_key)))
+  Ok(json.public_key)
 }
 
 pub type PingInstanceError {
@@ -75,7 +75,7 @@ pub fn serialize_ping_error(err: PingInstanceError) {
 }
 
 pub fn request_key_exchange(
-  server_key: public_key.PublicKey,
+  public_key: public_key.PublicKey,
   address: address.InstanceAddress,
   my_address: address.InstanceAddress,
 ) {
@@ -83,7 +83,7 @@ pub fn request_key_exchange(
   let challenge = address.generate_challenge(address, uuid)
   let body =
     server.IdentifyInstanceBody(
-      public_key: server_key,
+      public_key: public_key,
       address: my_address,
       challenge: uuid,
     )

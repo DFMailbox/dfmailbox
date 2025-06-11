@@ -72,24 +72,24 @@ pub fn encode_identify_instance_response(
 
 pub type SigningResponse {
   SigningResponse(
-    server_key: public_key.PublicKey,
+    public_key: public_key.PublicKey,
     signature: signature.Signature,
     instance: address.InstanceAddress,
   )
 }
 
 pub fn signing_response_to_json(signing_response: SigningResponse) -> json.Json {
-  let SigningResponse(server_key:, signature:, instance:) = signing_response
+  let SigningResponse(public_key:, signature:, instance:) = signing_response
   json.object([
-    #("server_key", server_key |> public_key.to_base64_url |> json.string),
+    #("public_key", public_key |> public_key.to_base64_url |> json.string),
     #("signature", signature |> signature.to_base64 |> json.string),
     #("instance", instance |> address.to_string |> json.string),
   ])
 }
 
 pub fn signing_response_decoder() -> decode.Decoder(SigningResponse) {
-  use server_key <- decode.field("server_key", decoders.decode_public_key())
+  use public_key <- decode.field("public_key", decoders.decode_public_key())
   use signature <- decode.field("signature", decoders.decode_signature())
   use instance <- decode.field("instance", address.decode_address())
-  decode.success(SigningResponse(server_key:, signature:, instance:))
+  decode.success(SigningResponse(public_key:, signature:, instance:))
 }
