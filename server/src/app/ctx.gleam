@@ -1,7 +1,7 @@
 import actor/cache
 import actor/plot_mailbox
 import actor/profiles
-import app/instance
+import app/address
 import ed25519/private_key
 import ed25519/public_key
 import gleam/list
@@ -19,7 +19,7 @@ pub type Context {
     mailbox_map: cache.Cache(Int, plot_mailbox.PlotMailbox),
     identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
     ext_identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
-    instance: instance.InstanceDomain,
+    instance: address.InstanceAddress,
     nginx: Bool,
   )
 }

@@ -1,7 +1,7 @@
 import actor/cache
 import actor/profiles
+import app/address
 import app/ctx
-import app/instance
 import app/router
 import dot_env
 import dot_env/env
@@ -61,7 +61,7 @@ fn get_env() -> ProgramEnv {
   let assert Ok(port) = env.get_int("PORT")
   let assert Ok(host) =
     env.get_then("HOST", fn(host) {
-      instance.parse(host) |> result.replace_error("Host is invalid")
+      address.parse(host) |> result.replace_error("Host is invalid")
     })
   let assert Ok(extra_ips) = case env.get_string("ALLOWED_IPS") {
     Ok(env) -> {
@@ -103,7 +103,7 @@ pub type ProgramEnv {
   ProgramEnv(
     secret_key: String,
     database_url: String,
-    host: instance.InstanceDomain,
+    host: address.InstanceAddress,
     port: Int,
     allowed_ips: List(mist.IpAddress),
     is_nginx: Bool,

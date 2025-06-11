@@ -1,5 +1,5 @@
+import app/address
 import app/handle/helper
-import app/instance
 import app/struct/server
 import ed25519/public_key
 import ed25519/signature
@@ -17,13 +17,13 @@ import gleam/string
 import youid/uuid
 
 pub fn ping_sign(
-  domain: instance.InstanceDomain,
+  address: address.InstanceAddress,
 ) -> Result(public_key.PublicKey, PingInstanceError) {
   let uuid = uuid.v4()
-  let challenge = instance.generate_challenge(domain, uuid)
+  let challenge = address.generate_challenge(address, uuid)
 
   let req =
-    instance.request(domain)
+    address.request(address)
     |> request.set_path("/v0/federation/instance")
     |> request.set_query([#("challenge", uuid |> uuid.to_string)])
     |> request.set_method(http.Get)
@@ -76,19 +76,19 @@ pub fn serialize_ping_error(err: PingInstanceError) {
 
 pub fn request_key_exchange(
   server_key: public_key.PublicKey,
-  domain: instance.InstanceDomain,
-  my_host: instance.InstanceDomain,
+  address: address.InstanceAddress,
+  my_address: address.InstanceAddress,
 ) {
   let uuid = uuid.v4()
-  let challenge = instance.generate_challenge(domain, uuid)
+  let challenge = address.generate_challenge(address, uuid)
   let body =
     server.IdentifyInstanceBody(
       public_key: server_key,
-      host: my_host,
+      address: my_address,
       challenge: uuid,
     )
   let req =
-    instance.request(domain)
+    address.request(address)
     |> request.set_path("/v0/federation/instance")
     |> request.set_method(http.Post)
     |> request.prepend_header("content-type", "application/json")
@@ -106,12 +106,12 @@ pub fn request_key_exchange(
     |> result.map_error(JsonDecodeError(_, res.body)),
   )
   use <- bool.guard(
-    json.domain != domain,
+    json.address != address,
     Error(Other(
-      "Expected domain "
-      <> instance.to_string(json.domain)
-      <> " got domain "
-      <> instance.to_string(domain),
+      "Expected address "
+      <> address.to_string(json.address)
+      <> " got address "
+      <> address.to_string(address),
     )),
   )
   let valid =

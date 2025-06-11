@@ -18,7 +18,7 @@ pub fn introduce(json: dynamic.Dynamic, ctx: ctx.Context) {
     instance.introduce_instance_body_decoder(),
   )
   use key <- helper.try_res(
-    ext.request_key_exchange(body.public_key, body.host, ctx.instance)
+    ext.request_key_exchange(body.public_key, body.address, ctx.instance)
     |> result.map_error(ext.serialize_ping_error)
     |> result.map_error(helper.construct_error(_, 400)),
   )
@@ -41,7 +41,7 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
     list.first(instance.rows)
     |> result.replace_error(helper.construct_error("Unknown instance", 404)),
   )
-  instance.domain
+  instance.address
   |> json.nullable(json.string)
   |> json.to_string_tree()
   |> wisp.json_response(200)
