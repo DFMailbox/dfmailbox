@@ -83,7 +83,7 @@ pub fn request_key_exchange(
   let challenge = address.generate_challenge(address, uuid)
   let body =
     server.IdentifyInstanceBody(
-      public_key: public_key,
+      public_key:,
       address: my_address,
       challenge: uuid,
     )

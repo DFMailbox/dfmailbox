@@ -242,9 +242,13 @@ pub fn get_plot(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use address <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(
-      GetPlotRow(id:, owner:, public_key:, address:, mailbox_msg_id:),
-    )
+    decode.success(GetPlotRow(
+      id:,
+      owner:,
+      public_key:,
+      address:,
+      mailbox_msg_id:,
+    ))
   }
 
   "SELECT plot.id, owner, public_key, address, mailbox_msg_id FROM plot
@@ -375,9 +379,13 @@ pub fn plot_from_api_key(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use address <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(
-      PlotFromApiKeyRow(id:, owner:, public_key:, address:, mailbox_msg_id:),
-    )
+    decode.success(PlotFromApiKeyRow(
+      id:,
+      owner:,
+      public_key:,
+      address:,
+      mailbox_msg_id:,
+    ))
   }
 
   "SELECT plot.id, owner, public_key, address, mailbox_msg_id FROM api_key
