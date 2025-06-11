@@ -130,7 +130,7 @@ VALUES ($1, $2, 0)
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type GetInstanceRow {
-  GetInstanceRow(domain: Option(String))
+  GetInstanceRow(address: Option(String))
 }
 
 /// Runs the `get_instance` query
@@ -141,44 +141,13 @@ pub type GetInstanceRow {
 ///
 pub fn get_instance(db, arg_1) {
   let decoder = {
-    use domain <- decode.field(0, decode.optional(decode.string))
-    decode.success(GetInstanceRow(domain:))
+    use address <- decode.field(0, decode.optional(decode.string))
+    decode.success(GetInstanceRow(address:))
   }
 
-  "SELECT domain FROM known_instance
+  "SELECT address FROM known_instance
 WHERE public_key = $1;
 
-"
-  |> pog.query
-  |> pog.parameter(pog.bytea(arg_1))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `get_domain` query
-/// defined in `./src/sql/get_domain.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type GetDomainRow {
-  GetDomainRow(domain: Option(String))
-}
-
-/// Runs the `get_domain` query
-/// defined in `./src/sql/get_domain.sql`.
-///
-/// > 🐿️ This function was generated automatically using v3.0.4 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn get_domain(db, arg_1) {
-  let decoder = {
-    use domain <- decode.field(0, decode.optional(decode.string))
-    decode.success(GetDomainRow(domain:))
-  }
-
-  "SELECT domain FROM known_instance
-WHERE public_key = $1
 "
   |> pog.query
   |> pog.parameter(pog.bytea(arg_1))
@@ -255,7 +224,7 @@ pub type GetPlotRow {
     id: Int,
     owner: Uuid,
     public_key: Option(BitArray),
-    domain: Option(String),
+    address: Option(String),
     mailbox_msg_id: Int,
   )
 }
@@ -271,14 +240,14 @@ pub fn get_plot(db, arg_1) {
     use id <- decode.field(0, decode.int)
     use owner <- decode.field(1, uuid_decoder())
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
-    use domain <- decode.field(3, decode.optional(decode.string))
+    use address <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
     decode.success(
-      GetPlotRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
+      GetPlotRow(id:, owner:, public_key:, address:, mailbox_msg_id:),
     )
   }
 
-  "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM plot
+  "SELECT plot.id, owner, public_key, address, mailbox_msg_id FROM plot
 LEFT JOIN known_instance instance ON instance.public_key = plot.instance
 WHERE plot.id = $1;
 "
@@ -297,7 +266,7 @@ WHERE plot.id = $1;
 pub fn identify_instance(db, arg_1, arg_2) {
   let decoder = decode.map(decode.dynamic, fn(_) { Nil })
 
-  "INSERT INTO known_instance (public_key, domain)
+  "INSERT INTO known_instance (public_key, address)
 VALUES ($1, $2)
 "
   |> pog.query
@@ -346,6 +315,37 @@ WHERE plot = $1;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `get_address` query
+/// defined in `./src/sql/get_address.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type GetAddressRow {
+  GetAddressRow(address: Option(String))
+}
+
+/// Runs the `get_address` query
+/// defined in `./src/sql/get_address.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn get_address(db, arg_1) {
+  let decoder = {
+    use address <- decode.field(0, decode.optional(decode.string))
+    decode.success(GetAddressRow(address:))
+  }
+
+  "SELECT address FROM known_instance
+WHERE public_key = $1
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `plot_from_api_key` query
 /// defined in `./src/sql/plot_from_api_key.sql`.
 ///
@@ -357,7 +357,7 @@ pub type PlotFromApiKeyRow {
     id: Int,
     owner: Uuid,
     public_key: Option(BitArray),
-    domain: Option(String),
+    address: Option(String),
     mailbox_msg_id: Int,
   )
 }
@@ -373,14 +373,14 @@ pub fn plot_from_api_key(db, arg_1) {
     use id <- decode.field(0, decode.int)
     use owner <- decode.field(1, uuid_decoder())
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
-    use domain <- decode.field(3, decode.optional(decode.string))
+    use address <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
     decode.success(
-      PlotFromApiKeyRow(id:, owner:, public_key:, domain:, mailbox_msg_id:),
+      PlotFromApiKeyRow(id:, owner:, public_key:, address:, mailbox_msg_id:),
     )
   }
 
-  "SELECT plot.id, owner, public_key, domain, mailbox_msg_id FROM api_key
+  "SELECT plot.id, owner, public_key, address, mailbox_msg_id FROM api_key
 JOIN plot ON plot.id = api_key.plot
 LEFT JOIN known_instance instance ON instance.public_key = plot.instance
 WHERE hashed_key = sha256($1);

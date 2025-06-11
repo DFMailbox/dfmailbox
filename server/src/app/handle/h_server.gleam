@@ -1,8 +1,8 @@
 import actor/cache
+import app/address
 import app/ctx
 import app/ext
 import app/handle/helper
-import app/instance
 import app/struct/server
 import ed25519/public_key
 import ed25519/signature
@@ -31,7 +31,7 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
     ctx.private_key
     |> public_key.derive_key()
 
-  let challenge = instance.generate_challenge(ctx.instance, challenge)
+  let challenge = address.generate_challenge(ctx.instance, challenge)
 
   let sig = signature.create(ctx.private_key, public_key, challenge)
 
@@ -44,30 +44,30 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
 pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   use body <- helper.guard_json(json, server.identify_instance_body_decoder())
   use requester_key <- helper.try_res(
-    ext.ping_sign(body.host)
+    ext.ping_sign(body.address)
     |> result.map_error(fn(err) {
       helper.construct_error(err |> ext.serialize_ping_error, 400)
     }),
   )
   let req_key_bits = requester_key |> public_key.serialize_to_bits
 
-  use found_domain <- helper.guard_db(sql.get_domain(ctx.conn, req_key_bits))
-  let res = case list.first(found_domain.rows) {
+  use found_address <- helper.guard_db(sql.get_address(ctx.conn, req_key_bits))
+  let res = case list.first(found_address.rows) {
     Ok(row) ->
-      case row.domain {
-        option.Some(domain) -> {
-          use domain <- result.try(
-            instance.parse(domain)
+      case row.address {
+        option.Some(address) -> {
+          use address <- result.try(
+            address.parse(address)
             |> result.replace_error(helper.construct_error(
-              "Domain isn't valid",
+              "Address isn't valid",
               409,
             )),
           )
           use <- bool.guard(
-            body.host != domain,
+            body.address != address,
             Error(helper.construct_error(
               // Maybe change this
-              "Key does not match domain",
+              "Key does not match address",
               409,
             )),
           )
@@ -78,7 +78,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
       }
     Error(Nil) -> {
       // Register this
-      instance.identify(ctx.conn, req_key_bits, body.host)
+      address.identify(ctx.conn, req_key_bits, body.address)
       |> result.replace_error(helper.construct_error("database error", 500))
       |> result.replace(Nil)
     }
@@ -91,7 +91,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     helper.construct_error("Not my key", 400),
   )
 
-  let challenge = instance.generate_challenge(ctx.instance, body.challenge)
+  let challenge = address.generate_challenge(ctx.instance, body.challenge)
 
   let sig = signature.create(ctx.private_key, my_pubkey, challenge)
 
@@ -104,7 +104,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     identity_key: source,
     signature: sig,
     public_key: my_pubkey,
-    domain: ctx.instance,
+    address: ctx.instance,
   )
   |> server.encode_identify_instance_response()
   |> json.to_string_tree()

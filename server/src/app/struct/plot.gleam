@@ -22,13 +22,13 @@ pub type GetPlotResponse {
     plot_id: Int,
     owner: uuid.Uuid,
     public_key: option.Option(public_key.PublicKey),
-    domain: option.Option(String),
+    address: option.Option(String),
     mailbox_msg_id: Int,
   )
 }
 
 pub fn encode_get_plot_response(get_plot_response: GetPlotResponse) -> json.Json {
-  let GetPlotResponse(plot_id:, owner:, public_key:, domain:, mailbox_msg_id:) =
+  let GetPlotResponse(plot_id:, owner:, public_key:, address:, mailbox_msg_id:) =
     get_plot_response
   json.object([
     #("plot_id", json.int(plot_id)),
@@ -37,7 +37,7 @@ pub fn encode_get_plot_response(get_plot_response: GetPlotResponse) -> json.Json
       option.None -> json.null()
       option.Some(value) -> value |> public_key.to_base64_url() |> json.string
     }),
-    #("domain", json.nullable(domain, json.string)),
+    #("address", json.nullable(address, json.string)),
     #("mailbox_msg_id", json.int(mailbox_msg_id)),
   ])
 }

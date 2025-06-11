@@ -100,7 +100,7 @@ pub fn get_other_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
             let assert Ok(k) = public_key.deserialize_all(a)
             k
           }),
-        domain: it.domain,
+        address: it.address,
         mailbox_msg_id: it.mailbox_msg_id,
       )
       |> plot.encode_get_plot_response()
