@@ -35,7 +35,8 @@ pub fn middleware(
     |> cors_builder.allow_method(http.Post)
     |> cors_builder.allow_method(http.Put)
     |> cors_builder.allow_method(http.Delete)
-    |> cors_builder.expose_header("Content-Type")
+    |> cors_builder.allow_header("content-type")
+    |> cors_builder.allow_header("x-api-key")
     |> cors_builder.max_age(60 * 60)
   use req <- cors_builder.wisp_middleware(req, cors)
 
