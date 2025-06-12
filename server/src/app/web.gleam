@@ -1,10 +1,12 @@
 import actor/cache
 import app/ctx
 import app/handle/helper
+import cors_builder
 import ed25519/public_key
 import gleam/bit_array
 import gleam/bool
 import gleam/dict
+import gleam/http
 import gleam/http/request
 import gleam/int
 import gleam/list
@@ -26,6 +28,16 @@ pub fn middleware(
   // I miss this in rust...
   use <- wisp.rescue_crashes()
   use req <- wisp.handle_head(req)
+  let cors =
+    cors_builder.new()
+    |> cors_builder.allow_all_origins()
+    |> cors_builder.allow_method(http.Get)
+    |> cors_builder.allow_method(http.Post)
+    |> cors_builder.allow_method(http.Put)
+    |> cors_builder.allow_method(http.Delete)
+    |> cors_builder.expose_header("Content-Type")
+    |> cors_builder.max_age(60 * 60)
+  use req <- cors_builder.wisp_middleware(req, cors)
 
   handle_request(req)
 }
