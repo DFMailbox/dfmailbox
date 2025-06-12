@@ -155,6 +155,36 @@ WHERE public_key = $1;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `list_instances` query
+/// defined in `./src/sql/list_instances.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.4 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type ListInstancesRow {
+  ListInstancesRow(public_key: BitArray, address: Option(String))
+}
+
+/// Runs the `list_instances` query
+/// defined in `./src/sql/list_instances.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn list_instances(db) {
+  let decoder = {
+    use public_key <- decode.field(0, decode.bit_array)
+    use address <- decode.field(1, decode.optional(decode.string))
+    decode.success(ListInstancesRow(public_key:, address:))
+  }
+
+  "SELECT public_key, address FROM known_instance;
+"
+  |> pog.query
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `get_api_keys` query
 /// defined in `./src/sql/get_api_keys.sql`.
 ///
