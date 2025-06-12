@@ -86,6 +86,18 @@ pub fn request(address: InstanceAddress) -> request.Request(String) {
 
 /// Use this instead of sql.indentify_instance
 /// This will not bite me in the ass
-pub fn identify(conn, public_key, address: InstanceAddress) {
-  sql.identify_instance(conn, public_key, address.host)
+pub fn identify(
+  conn,
+  public_key,
+  address: InstanceAddress,
+  this_address: InstanceAddress,
+) {
+  case this_address == address {
+    True -> Nil
+    False -> {
+      let assert Ok(_) =
+        sql.identify_instance(conn, public_key, to_string(address))
+      Nil
+    }
+  }
 }

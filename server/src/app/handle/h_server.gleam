@@ -78,9 +78,8 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
       }
     Error(Nil) -> {
       // Register this
-      address.identify(ctx.conn, req_key_bits, body.address)
-      |> result.replace_error(helper.construct_error("database error", 500))
-      |> result.replace(Nil)
+      address.identify(ctx.conn, req_key_bits, body.address, ctx.instance)
+      Ok(Nil)
     }
   }
   use Nil <- helper.try_res(res)
