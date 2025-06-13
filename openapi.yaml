@@ -108,13 +108,13 @@ paths:
         in: query
         required: true
         schema:
-          type: integer
+          $ref: '#/components/schemas/MailboxItemId'
 
       - name: limit
         in: query
         required: false
         schema:
-          type: integer
+          $ref: '#/components/schemas/MailboxItemId'
       responses:
         '200':
           description: OK
@@ -157,13 +157,13 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            $ref: '#/components/schemas/MailboxItemId'
 
         - name: limit
           in: query
           required: false
           schema:
-            type: integer
+            $ref: '#/components/schemas/MailboxItemId'
       responses:
         '200':
           description: OK
@@ -208,6 +208,7 @@ paths:
                     created_at:
                       description: Unix timestamp of creation
                       type: integer
+                      format: int64
               example:
                 - hashed_key: fh2ZUxgDyPv1a0BudAlkRUDDM7u7HG/qeXD2pqXzA48=
                   created_at: 1749445121
@@ -236,11 +237,54 @@ paths:
       responses:
         '200':
           description: OK
-
-
-
-
-
+  /plot/trust:
+    get:
+      summary: Get trusted plots
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PlotId'
+    post:
+      summary: Add plots to trust
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/PlotId'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Plot doesn't exist
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    const: plot_not_registered
+    delete:
+      parameters:
+        - name: 'plots[]'
+          description: A list of plots to remove trust from, empty for all
+          in: query
+          required: false
+          schema:
+            items:
+              $ref: '#/components/schemas/PlotId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: Plots un-trusted
+                items:
+                  $ref: '#/components/schemas/PlotId'
 
 components:
   schemas:
@@ -261,7 +305,7 @@ components:
           example: "dfm2.dftools.dev"
         mailbox_msg_id:
           description: The current message ID the mailbox is on
-          type: integer
+          $ref: '#/components/schemas/MailboxItemId'
     MailboxItem:
       description: An item in the mailbox
       properties:
@@ -384,9 +428,11 @@ components:
         - "069a79f4-44e9-4726-a5be-fca90e38aaf5"
     PlotId:
       type: integer
+      format: int32
       description: An id assigned by DiamondFire to identify a plot, this ID can be used in /plot <plot_id>
     MailboxItemId:
       type: integer
+      format: int64
       description: A mailbox item id that refers to an item in any mailbox
     DFJson:
       description: A DFJson object
