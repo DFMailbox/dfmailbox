@@ -1,0 +1,155 @@
+openapi: "3.1.0"
+info:
+  title: DFMailbox API
+  version: "0.0.1"
+servers:
+  - url: https://dfm.dftools.dev/v0
+  - url: https://dfm2.dftools.dev/v0
+  - url: http://localhost:8080/v0
+paths:
+  /plot:
+    get:
+      security:
+        - ApiKey: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plot'
+    post:
+      summary: Register this plot
+      description: Register the authenticated plot
+      security:
+        - ApiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                instance:
+                  $ref: '#/components/schemas/PublicKey'
+      responses:
+        '201':
+          description: OK
+        '409':
+          description: Plot registration error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - properties:
+                      error:
+                        type: string
+                        const: plot_registered
+                  - properties:
+                      error:
+                        type: string
+                        const: unknown_instance
+                  - properties:
+                      error:
+                        type: string
+                        const: instance_key_compromised
+    put:
+      summary: Replace a plot's instance
+      security:
+        - ApiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                instance:
+                  $ref: '#/components/schemas/PublicKey'
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: Plot instance instance replacement error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - properties:
+                      error:
+                        type: string
+                        const: plot_not_registered
+                  - properties:
+                      error:
+                        type: string
+                        const: unknown_instance
+                  - properties:
+                      error:
+                        type: string
+                        const: instance_key_compromised
+    delete:
+      summary: Remove this plot
+      security:
+        - ApiKey: []
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: Plot deletion error
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    const: plot_not_registered
+
+components:
+  schemas:
+    PublicKey:
+      description: A base64 URL encoded ed25519 public key
+      type: string
+      example: "0nqH2kJLWxfqdH0QIsKJp84Ck9OhPWCHZ3uMmcoknSY"
+    Address:
+      description: An address pointing to another DFMailbox instance
+      type: string
+      example: "dfm.dftools.dev"
+    Uuid:
+      type: string
+      description: A Minecraft Player UUID
+      examples:
+        - "069a79f444e94726a5befca90e38aaf5"
+        - "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+
+    Plot:
+      description: A known plot
+      properties:
+        plot_id:
+          type: integer
+        owner:
+          $ref: '#/components/schemas/Uuid'
+        public_key:
+          $ref: '#/components/schemas/PublicKey'
+        address:
+          description: An `Address`, if null, means it has the private key has been compromised
+          type:
+            - 'null'
+            - string
+          example: "dfm2.dftools.dev"
+        mailbox_msg_id:
+          description: The current message ID the mailbox is on
+          type: integer
+
+
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      name: x-api-key
+      in: header
+    Identity:
+      type: apiKey
+      name: x-identity-token
+      description: A key used by instances to communicate with one another
+      in: header
+    Plot:
+      type: apiKey
+      name: user-agent
+      description: Can only be used by DiamondFire IPs, found in the User-Agent header.
+        If you are a user of this API, you cannot use this authentication.
+      in: header
