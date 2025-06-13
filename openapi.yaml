@@ -291,6 +291,8 @@ paths:
   /plots/{plot_id}:
     get:
       summary: Get another plot's info
+      security:
+        - ApiKey: []
       parameters:
         - $ref: '#/components/parameters/PlotId'
       responses:
@@ -305,6 +307,8 @@ paths:
   /plots/{plot_id}/mailbox:
     post:
       summary: Post a new item into another plot's mailbox
+      security:
+        - ApiKey: []
       parameters:
         - $ref: '#/components/parameters/PlotId'
       requestBody:
@@ -312,9 +316,105 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/PostItemsResult'
+  /instance:
+    get:
+      summary: Get instance address by key
+      description: This is to check what the server thinks the address is
+      parameters:
+        - name: public_key
+          in: query
+          schema:
+            $ref: '#/components/schemas/PublicKey'
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  address:
+                    $ref: '#/components/schemas/Address'
+        '404':
+          description: Unknown instance
+    post:
+      summary: Introduce an instance to another instance
+      description: Make both instances add each other to their databases enabling both of them to communicate.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                public_key:
+                  description: Public key of the instance you wish to introduce
+                  $ref: '#/components/schemas/PublicKey'
+                address:
+                  description: Address of the instance you wish to introduce
+                  $ref: '#/components/schemas/Address'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Error introducing instance
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - properties:
+                      error:
+                        const: unreachable
+                      error_message:
+                        $ref: '#/components/schemas/ErrorMessage'
+                  - properties:
+                      error:
+                        const: non_compliance
+                      error_message:
+                        $ref: '#/components/schemas/ErrorMessage'
+                  - properties:
+                      error:
+                        const: mismatched_address
+                      expected_address:
+                        $ref: '#/components/schemas/Address'
+                  - properties:
+                      error:
+                        const: mismatched_key
+                      expected_key:
+                        $ref: '#/components/schemas/PublicKey'
+    delete:
+      summary: Mark instance key as compromised
+      description: When the private key gets compromised and you have the key, you may complete a challenge to make it unusable preventing future damage.<br>
+        Call this endpoint to get a challenge, then complete the challenge.
+        The challenge received from this endpoint must be completed in 5 minutes.<br>
+        To complete the challenge, sign the `instance address to bytes` + `uuid bytes` and base64 the signature.
+      parameters:
+        - name: challenge
+          in: query
+          schema:
+            type: string
+        - name: signature
+          in: query
+          schema:
+            type: string
 
-
-
+      responses:
+        '200':
+          description: Key successfully marked as compromised
+        '201':
+          description: Created challenge
+          content:
+            application/json:
+              schema:
+                properties:
+                  challenge:
+                    $ref: '#/components/schemas/Uuid'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - properties:
+                      error:
+                        const: challenge_failed
 
 components:
   schemas:
@@ -472,6 +572,9 @@ components:
           val: "Hello DFMailbox"
         - id: num
           val: 42
+    ErrorMessage:
+      description: A non-standard error message explaining in human terms
+      type: string
 
 
   requestBodies:
