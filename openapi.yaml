@@ -190,6 +190,54 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/MailboxQueryResponse'
+  /plot/api-key:
+    get:
+      summary: List all API key hashes
+      description: Return all non revoked SHA256 hashed API keys
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  properties:
+                    hashed_key:
+                      description: SHA256 hashed key encoded in base64
+                      type: string
+                    created_at:
+                      description: Unix timestamp of creation
+                      type: integer
+              example:
+                - hashed_key: fh2ZUxgDyPv1a0BudAlkRUDDM7u7HG/qeXD2pqXzA48=
+                  created_at: 1749445121
+                - hashed_key: QLhmwfU2vtwuOGNFjMQKFDh6ILp+qtSufalOjX13iv0=
+                  created_at: 1749257047
+    post:
+      summary: Create an API Key
+      description: Generate an API key (any random string of utf-8 bytes) while storing a hashed version. Once lost, the key cannot be recovered.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: Any random string of utf-8 characters
+                properties:
+                  api_key:
+                    type: string
+                examples:
+                  - api_key: dfm_key_LbE8Gbxs6qPysnv86Ojz5gQwzad+7AQI7pLjR66Ax9
+                  - api_key: br4nsMQMaiWHTULStx1MOcdZNRWTyeV7tJexOWht
+                  - api_key: technically this is an an allowed key but this sucks
+    delete:
+      summary: Revoke all API keys
+      description: Revokes every api key including the one you are using
+      responses:
+        '200':
+          description: OK
+
+
 
 
 
@@ -342,13 +390,12 @@ components:
       description: A mailbox item id that refers to an item in any mailbox
     DFJson:
       description: A DFJson object
+      $ref: 'https://dftools.dev/dfjson/schema/dfjson-0.1.1.json'
       examples:
         - id: str
           val: "Hello DFMailbox"
         - id: num
           val: 42
-
-      $ref: 'https://dftools.dev/dfjson/schema/dfjson-0.1.1.json'
 
 
   securitySchemes:
