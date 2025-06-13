@@ -147,7 +147,7 @@ paths:
                 description: The message Id before the post
                 properties:
                   msg_id:
-                    $ref: '#/components/schemas/MailboxMessageId'
+                    $ref: '#/components/schemas/MailboxItemId'
     delete:
       summary: Fetch and delete messages before an id from this mailbox
       description: This prevents the mailbox from getting clogged up with messages that have already been read
@@ -171,7 +171,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FetchMailboxResult'
-
+  /plot/query:
+    post:
+      summary: Run many mailbox operations at once
+      description: Usually this is ran by a plot's polling due to the rate limiting as of writing this api. 
+        It doesn't really make sense to hit this endpoint in a non DF plot context.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/MailboxQueryOperation'
+      responses:
+        '200':
+          description: Processed all queries
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/MailboxQueryResponse'
 
 
 
@@ -200,7 +218,7 @@ components:
       description: An item in the mailbox
       properties:
         msg_id:
-          $ref: '#/components/schemas/MailboxMessageId'
+          $ref: '#/components/schemas/MailboxItemId'
         timestamp:
           description: A unix timestamp
           type: integer
@@ -215,11 +233,91 @@ components:
             $ref: '#/components/schemas/MailboxItem'
         until:
           description: The last mailbox item id of the returned items
-          $ref: '#/components/schemas/MailboxMessageId'
+          $ref: '#/components/schemas/MailboxItemId'
         current_id:
           # TODO: Check if this is really useful
           description: The ID of the next item
-          $ref: '#/components/schemas/MailboxMessageId'
+          $ref: '#/components/schemas/MailboxItemId'
+    MailboxQueryOperation:
+      oneOf:
+        - description: Imitates GET /plot/mailbox
+          properties:
+            type:
+              const: peek
+            after:
+              description: The mailbox item id to get messages after
+              $ref: '#/components/schemas/MailboxItemId'
+            limit:
+              type:
+                - 'null'
+                - integer
+          example:
+            type: peek
+            after: 4
+            limit: null
+        - description: Imitates DELETE /plot/mailbox
+          properties:
+            type:
+              const: dequeue
+            after:
+              description: The mailbox item id to get messages after
+              $ref: '#/components/schemas/MailboxItemId'
+          example:
+            type: dequeue
+            after: 4
+        - description: Imitates POST /plot/mailbox
+          properties:
+            type:
+              const: enqueue
+            value:
+              items:
+                $ref: '#/components/schemas/DFJson'
+            to:
+              $ref: '#/components/schemas/PlotId'
+          example:
+            type: enqueue
+            value:
+              - id: str
+                val: You know what is better than &fballs?
+              - id: str
+                val: It's <white>balls
+        - description: Imitates
+          properties:
+            type:
+              const: cleanup
+            before_at:
+              description: Delete this item and all items before it
+              $ref: '#/components/schemas/MailboxItemId'
+          example:
+            type: cleanup
+            before_at: 4
+    MailboxQueryResponse:
+      oneOf:
+        - properties:
+            type:
+              const: peek
+            result:
+              $ref: '#/components/schemas/FetchMailboxResult'
+        - properties:
+            type:
+              const: dequeue
+            result:
+              $ref: '#/components/schemas/FetchMailboxResult'
+        - properties:
+            type:
+              const: enqueue
+            msg_id:
+              $ref: '#/components/schemas/MailboxItemId'
+        - properties:
+            type:
+              const: cleanup
+        - properties:
+            type:
+              const: error
+            msg:
+              oneOf:
+                - const: plot_not_registered
+                - const: plot_not_trusted
 
     # Basic schemas
     PublicKey:
@@ -239,9 +337,9 @@ components:
     PlotId:
       type: integer
       description: An id assigned by DiamondFire to identify a plot, this ID can be used in /plot <plot_id>
-    MailboxMessageId:
+    MailboxItemId:
       type: integer
-      description: An ID that refers to a message in any mailbox.
+      description: A mailbox item id that refers to an item in any mailbox
     DFJson:
       description: A DFJson object
       examples:
