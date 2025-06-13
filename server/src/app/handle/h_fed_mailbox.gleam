@@ -6,6 +6,7 @@ import ed25519/public_key
 import gleam/bool
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/json
 import gleam/list
 import gleam/option
 import gleam/result
@@ -45,12 +46,45 @@ pub fn post(
     |> result.replace(helper.construct_error("I don't own 'to'", 400)),
   )
   let assert Ok(mailbox) = ctx.get_mailbox_lazy(ctx, to.id)
+
   plot_mailbox.send(mailbox, body.data, from.id)
-  wisp.created()
+  |> PostExtMailboxResponse()
+  |> post_ext_mailbox_response_to_json()
+  |> json.to_string_tree()
+  |> wisp.json_response(200)
 }
 
-type PostExtMailboxBody {
+pub type PostExtMailboxResponse {
+  PostExtMailboxResponse(msg_id: Int)
+}
+
+pub fn post_ext_mailbox_response_to_json(
+  post_ext_mailbox_response: PostExtMailboxResponse,
+) -> json.Json {
+  let PostExtMailboxResponse(msg_id:) = post_ext_mailbox_response
+  json.object([#("msg_id", json.int(msg_id))])
+}
+
+pub fn post_ext_mailbox_response_decoder() -> decode.Decoder(
+  PostExtMailboxResponse,
+) {
+  use msg_id <- decode.field("msg_id", decode.int)
+  decode.success(PostExtMailboxResponse(msg_id:))
+}
+
+pub type PostExtMailboxBody {
   PostExtMailboxBody(from: Int, to: Int, data: List(dfjson.DFJson))
+}
+
+pub fn post_ext_mailbox_body_to_json(
+  post_ext_mailbox_body: PostExtMailboxBody,
+) -> json.Json {
+  let PostExtMailboxBody(from:, to:, data:) = post_ext_mailbox_body
+  json.object([
+    #("from", json.int(from)),
+    #("to", json.int(to)),
+    #("data", json.array(data, dfjson.encode_df_json)),
+  ])
 }
 
 fn post_ext_mailbox_body_decoder() -> decode.Decoder(PostExtMailboxBody) {

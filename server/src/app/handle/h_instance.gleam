@@ -4,9 +4,7 @@ import app/ext
 import app/handle/helper
 import app/struct/instance
 import ed25519/public_key
-import ed25519/signature
 import gleam/bit_array
-import gleam/dict
 import gleam/dynamic
 import gleam/json
 import gleam/list

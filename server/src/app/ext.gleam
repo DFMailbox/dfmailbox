@@ -1,6 +1,8 @@
 import app/address
+import app/handle/h_fed_mailbox
 import app/handle/helper
 import app/struct/server
+import dfjson
 import ed25519/public_key
 import ed25519/signature
 import gleam/bit_array
@@ -16,6 +18,7 @@ import gleam/result
 import gleam/string
 import youid/uuid
 
+/// Hit another instance's `GET /v0/federation/instance`
 pub fn ping_sign(
   address: address.InstanceAddress,
 ) -> Result(public_key.PublicKey, PingInstanceError) {
@@ -74,6 +77,7 @@ pub fn serialize_ping_error(err: PingInstanceError) {
   }
 }
 
+/// Hit another instance's `POST /v0/federation/instance` endpoint
 pub fn request_key_exchange(
   public_key: public_key.PublicKey,
   address: address.InstanceAddress,
@@ -120,4 +124,41 @@ pub fn request_key_exchange(
 
   crypto.hash(crypto.Sha256, json.identity_key |> bit_array.from_string)
   |> Ok
+}
+
+pub fn cross_send(
+  address: address.InstanceAddress,
+  identity_key: BitArray,
+  sender: Int,
+  receiver: Int,
+  data: List(dfjson.DFJson),
+) {
+  let body =
+    h_fed_mailbox.PostExtMailboxBody(from: sender, to: receiver, data:)
+    |> h_fed_mailbox.post_ext_mailbox_body_to_json()
+    |> json.to_string
+  let req =
+    address.request(address)
+    |> request.set_method(http.Post)
+    |> request.set_path("/v0/federation/mailbox")
+    |> request.set_header(
+      "x-identity-token",
+      identity_key |> bit_array.base64_encode(True),
+    )
+    |> request.set_body(body)
+  use res <- result.try(httpc.send(req) |> result.map_error(CSHttpError))
+  let assert Ok(json) =
+    json.parse(res.body, h_fed_mailbox.post_ext_mailbox_response_decoder())
+  case res.status {
+    200 -> Ok(json.msg_id)
+    401 -> Error(InvalidIdentity)
+    400 -> Error(PostError(res.body))
+    _ -> panic as "federation isn't following protocol"
+  }
+}
+
+pub type CrossSendError {
+  InvalidIdentity
+  CSHttpError(httpc.HttpError)
+  PostError(String)
 }
