@@ -9,6 +9,7 @@ servers:
 paths:
   /plot:
     get:
+      summary: Get plot info
       security:
         - ApiKey: []
       responses:
@@ -19,7 +20,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Plot'
     post:
-      summary: Register this plot
+      summary: Register plot
       description: Register the authenticated plot
       security:
         - ApiKey: []
@@ -84,7 +85,7 @@ paths:
                         type: string
                         const: instance_key_compromised
     delete:
-      summary: Remove this plot
+      summary: Remove plot
       security:
         - ApiKey: []
       responses:
@@ -101,7 +102,7 @@ paths:
                     const: plot_not_registered
   /plot/mailbox:
     get:
-      summary: Get items from this mailbox
+      summary: Get items from mailbox
       security:
         - ApiKey: []
       parameters:
@@ -125,35 +126,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/FetchMailboxResult'
     post:
-      summary: Post a new item into this mailbox
+      summary: Post a new item into mailbox
       security:
         - ApiKey: []
       requestBody:
-        description: Items to post. The first item goes in first, last item goes in last.
-        content:
-          application/json:
-            schema:
-              items:
-                $ref: '#/components/schemas/DFJson'
-            example:
-              - id: str
-                val: "Hello DFMailbox"
-              - id: vec
-                x: 1
-                y: 2
-                z: 3
+        $ref: '#/components/requestBodies/PostItems'
       responses:
         '200':
-          description: Posted
-          content:
-            application/json:
-              schema:
-                description: The message Id before the post
-                properties:
-                  msg_id:
-                    $ref: '#/components/schemas/MailboxItemId'
+          $ref: '#/components/responses/PostItemsResult'
     delete:
-      summary: Fetch and delete messages before an id from this mailbox
+      summary: Fetch and delete messages before an id from mailbox
       description: This prevents the mailbox from getting clogged up with messages that have already been read
       security:
         - ApiKey: []
@@ -306,6 +288,33 @@ paths:
                 description: Plots un-trusted
                 items:
                   $ref: '#/components/schemas/PlotId'
+  /plots/{plot_id}:
+    get:
+      summary: Get another plot's info
+      parameters:
+        - $ref: '#/components/parameters/PlotId'
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plot'
+        '404':
+          description: Plot not registered
+  /plots/{plot_id}/mailbox:
+    post:
+      summary: Post a new item into another plot's mailbox
+      parameters:
+        - $ref: '#/components/parameters/PlotId'
+      requestBody:
+        $ref: '#/components/requestBodies/PostItems'
+      responses:
+        '200':
+          $ref: '#/components/responses/PostItemsResult'
+
+
+
 
 components:
   schemas:
@@ -465,6 +474,39 @@ components:
           val: 42
 
 
+  requestBodies:
+    PostItems:
+      description: Items to post. The first item goes in first, last item goes in last.
+      content:
+        application/json:
+          schema:
+            items:
+              $ref: '#/components/schemas/DFJson'
+          example:
+            - id: str
+              val: "Hello DFMailbox"
+            - id: vec
+              x: 1
+              y: 2
+              z: 3
+  responses:
+    PostItemsResult:
+      description: Posted
+      content:
+        application/json:
+          schema:
+            description: The message Id before the post
+            properties:
+              msg_id:
+                $ref: '#/components/schemas/MailboxItemId'
+
+  parameters:
+    PlotId:
+    - name: plot_id
+      in: path
+      required: true
+      schema:
+        type: integer
   securitySchemes:
     ApiKey:
       type: apiKey
