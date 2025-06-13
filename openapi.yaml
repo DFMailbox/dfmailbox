@@ -99,9 +99,129 @@ paths:
                   error:
                     type: string
                     const: plot_not_registered
+  /plot/mailbox:
+    get:
+      summary: Get items from this mailbox
+      parameters:
+      - name: msg_id
+        description: The id to get messages after
+        in: query
+        required: true
+        schema:
+          type: integer
+
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchMailboxResult'
+    post:
+      summary: Post a new item into this mailbox
+      requestBody:
+        description: Items to post. The first item goes in first, last item goes in last.
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/DFJson'
+            example:
+              - id: str
+                val: "Hello DFMailbox"
+              - id: vec
+                x: 1
+                y: 2
+                z: 3
+      responses:
+        '200':
+          description: Posted
+          content:
+            application/json:
+              schema:
+                description: The message Id before the post
+                properties:
+                  msg_id:
+                    $ref: '#/components/schemas/MailboxMessageId'
+    delete:
+      summary: Fetch and delete messages before an id from this mailbox
+      description: This prevents the mailbox from getting clogged up with messages that have already been read
+      parameters:
+        - name: msg_id
+          description: The id to get messages after
+          in: query
+          required: true
+          schema:
+            type: integer
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchMailboxResult'
+
+
+
+
 
 components:
   schemas:
+    Plot:
+      description: A known plot
+      properties:
+        plot_id:
+          $ref: '#/components/schemas/PlotId'
+        owner:
+          $ref: '#/components/schemas/Uuid'
+        public_key:
+          $ref: '#/components/schemas/PublicKey'
+        address:
+          description: An `Address`, if null, means it has the private key has been compromised
+          type:
+            - 'null'
+            - string
+          example: "dfm2.dftools.dev"
+        mailbox_msg_id:
+          description: The current message ID the mailbox is on
+          type: integer
+    MailboxItem:
+      description: An item in the mailbox
+      properties:
+        msg_id:
+          $ref: '#/components/schemas/MailboxMessageId'
+        timestamp:
+          description: A unix timestamp
+          type: integer
+        plot_origin:
+          $ref: '#/components/schemas/PlotId'
+        val:
+          $ref: '#/components/schemas/DFJson'
+    FetchMailboxResult:
+      properties:
+        items: # Key named 'items'
+          items: # 'items' contains items of
+            $ref: '#/components/schemas/MailboxItem'
+        until:
+          description: The last mailbox item id of the returned items
+          $ref: '#/components/schemas/MailboxMessageId'
+        current_id:
+          # TODO: Check if this is really useful
+          description: The ID of the next item
+          $ref: '#/components/schemas/MailboxMessageId'
+
+    # Basic schemas
     PublicKey:
       description: A base64 URL encoded ed25519 public key
       type: string
@@ -116,25 +236,21 @@ components:
       examples:
         - "069a79f444e94726a5befca90e38aaf5"
         - "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+    PlotId:
+      type: integer
+      description: An id assigned by DiamondFire to identify a plot, this ID can be used in /plot <plot_id>
+    MailboxMessageId:
+      type: integer
+      description: An ID that refers to a message in any mailbox.
+    DFJson:
+      description: A DFJson object
+      examples:
+        - id: str
+          val: "Hello DFMailbox"
+        - id: num
+          val: 42
 
-    Plot:
-      description: A known plot
-      properties:
-        plot_id:
-          type: integer
-        owner:
-          $ref: '#/components/schemas/Uuid'
-        public_key:
-          $ref: '#/components/schemas/PublicKey'
-        address:
-          description: An `Address`, if null, means it has the private key has been compromised
-          type:
-            - 'null'
-            - string
-          example: "dfm2.dftools.dev"
-        mailbox_msg_id:
-          description: The current message ID the mailbox is on
-          type: integer
+      $ref: 'https://dftools.dev/dfjson/schema/dfjson-0.1.1.json'
 
 
   securitySchemes:
