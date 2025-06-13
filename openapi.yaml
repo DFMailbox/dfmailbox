@@ -102,6 +102,8 @@ paths:
   /plot/mailbox:
     get:
       summary: Get items from this mailbox
+      security:
+        - ApiKey: []
       parameters:
       - name: msg_id
         description: The id to get messages after
@@ -124,6 +126,8 @@ paths:
                 $ref: '#/components/schemas/FetchMailboxResult'
     post:
       summary: Post a new item into this mailbox
+      security:
+        - ApiKey: []
       requestBody:
         description: Items to post. The first item goes in first, last item goes in last.
         content:
@@ -151,6 +155,8 @@ paths:
     delete:
       summary: Fetch and delete messages before an id from this mailbox
       description: This prevents the mailbox from getting clogged up with messages that have already been read
+      security:
+        - ApiKey: []
       parameters:
         - name: msg_id
           description: The id to get messages after
@@ -176,6 +182,8 @@ paths:
       summary: Run many mailbox operations at once
       description: Usually this is ran by a plot's polling due to the rate limiting as of writing this api. 
         It doesn't really make sense to hit this endpoint in a non DF plot context.
+      security:
+        - ApiKey: []
       requestBody:
         content:
           application/json:
@@ -194,6 +202,8 @@ paths:
     get:
       summary: List all API key hashes
       description: Return all non revoked SHA256 hashed API keys
+      security:
+        - ApiKey: []
       responses:
         '200':
           description: OK
@@ -217,6 +227,8 @@ paths:
     post:
       summary: Create an API Key
       description: Generate an API key (any random string of utf-8 bytes) while storing a hashed version. Once lost, the key cannot be recovered.
+      security:
+        - ApiKey: []
       responses:
         '200':
           description: OK
@@ -234,12 +246,16 @@ paths:
     delete:
       summary: Revoke all API keys
       description: Revokes every api key including the one you are using
+      security:
+        - ApiKey: []
       responses:
         '200':
           description: OK
   /plot/trust:
     get:
       summary: Get trusted plots
+      security:
+        - ApiKey: []
       responses:
         '200':
           description: OK
@@ -250,6 +266,8 @@ paths:
                   $ref: '#/components/schemas/PlotId'
     post:
       summary: Add plots to trust
+      security:
+        - ApiKey: []
       requestBody:
         content:
           application/json:
@@ -268,9 +286,12 @@ paths:
                   error:
                     const: plot_not_registered
     delete:
+      summary: Un-trust plots
+      security:
+        - ApiKey: []
       parameters:
-        - name: 'plots[]'
-          description: A list of plots to remove trust from, empty for all
+        - name: 'plots'
+          description: A list of comma separated plots to un-trust, empty means un-trust all
           in: query
           required: false
           schema:
