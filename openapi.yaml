@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
   title: DFMailbox API
-  version: "0.0.1"
+  version: "0.1.0"
 servers:
   - url: https://dfm.dftools.dev/v0
   - url: https://dfm2.dftools.dev/v0
