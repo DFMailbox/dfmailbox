@@ -498,7 +498,7 @@ paths:
                 to:
                   $ref: '#/components/schemas/PlotId'
                 data:
-                  $ref: '#/components/schemas/MailboxItemId'
+                  $ref: '#/components/schemas/DFJson'
       responses:
         '200':
           description: OK
@@ -556,8 +556,7 @@ components:
           description: The last mailbox item id of the returned items
           $ref: '#/components/schemas/MailboxItemId'
         current_id:
-          # TODO: Check if this is really useful
-          description: The ID of the next item
+          description: The ID of the last item
           $ref: '#/components/schemas/MailboxItemId'
       example:
         items:
@@ -586,7 +585,7 @@ components:
                   id: comp
                   val: Wow this is a real message!
         until: 34
-        current_id: 35
+        current_id: 34
 
     MailboxQueryOperation:
       oneOf:
