@@ -479,7 +479,37 @@ paths:
                 properties:
                   challenge:
                     $ref: '#/components/schemas/Uuid'
-
+  /federation/mailbox:
+    post:
+      summary: Send a message to another plot
+      security:
+        - Identity: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                from:
+                  $ref: '#/components/schemas/PlotId'
+                to:
+                  $ref: '#/components/schemas/PlotId'
+                data:
+                  $ref: '#/components/schemas/MailboxItemId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  msg_id:
+                    $ref: '#/components/schemas/MailboxItemId'
+        '400':
+          description: Failed to post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrossInstancePostError'
 
 components:
   schemas:
@@ -602,9 +632,39 @@ components:
             type:
               const: error
             msg:
-              oneOf:
-                - const: plot_not_registered
-                - const: plot_not_trusted
+              $ref: '#/components/schemas/PostItemsError'
+    PostItemsError:
+      oneOf:
+        - properties:
+            error:
+              const: plot_not_trusted
+            expected_key:
+              $ref: '#/components/schemas/PublicKey'
+        - properties:
+            error:
+              const: plot_not_registered
+    CrossInstancePostError:
+      oneOf:
+        - properties:
+            error:
+              const: sender_not_registered
+        - properties:
+            error:
+              const: sender_is_owned
+        - properties:
+            error:
+              const: sender_key_mismatch
+            actual_key:
+              $ref: '#/components/schemas/PublicKey'
+        - properties:
+            error:
+              const: receiver_not_registered
+        - properties:
+            error:
+              const: receiver_not_owned
+        - properties:
+            error:
+              const: sender_not_trusted
 
     # Basic schemas
     PublicKey:
@@ -671,6 +731,12 @@ components:
             properties:
               msg_id:
                 $ref: '#/components/schemas/MailboxItemId'
+    PostItemsFailure:
+      description: Cannot post to plot mailbox
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostItemsError'
 
   parameters:
     PlotId:

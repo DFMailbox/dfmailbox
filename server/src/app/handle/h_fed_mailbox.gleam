@@ -46,6 +46,7 @@ pub fn post(
     |> result.replace(helper.construct_error("I don't own 'to'", 400)),
   )
   let assert Ok(mailbox) = ctx.get_mailbox_lazy(ctx, to.id)
+  // dont forget to check trust
 
   plot_mailbox.send(mailbox, body.data, from.id)
   |> PostExtMailboxResponse()
