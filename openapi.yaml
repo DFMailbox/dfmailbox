@@ -319,7 +319,7 @@ paths:
   /instance:
     get:
       summary: Get instance address by key
-      description: This is to check what the server thinks the address is
+      description: This is to check what the instance thinks the address is
       parameters:
         - name: public_key
           in: query
@@ -337,8 +337,9 @@ paths:
         '404':
           description: Unknown instance
     post:
-      summary: Introduce an instance to another instance
-      description: Make both instances add each other to their databases enabling both of them to communicate.
+      summary: Introduce an instance
+      description: Add an instance to this instance's database. 
+        This will make this instance tell the newly added instance to add itself.
       requestBody:
         content:
           application/json:
@@ -361,7 +362,7 @@ paths:
                 oneOf:
                   - properties:
                       error:
-                        const: unreachable
+                        const: instance_unreachable
                       error_message:
                         $ref: '#/components/schemas/ErrorMessage'
                   - properties:
@@ -376,24 +377,24 @@ paths:
                         $ref: '#/components/schemas/Address'
                   - properties:
                       error:
-                        const: mismatched_key
+                        const: mismatched_public_key
                       expected_key:
                         $ref: '#/components/schemas/PublicKey'
     delete:
       summary: Mark instance key as compromised
-      description: When the private key gets compromised and you have the key, you may complete a challenge to make it unusable preventing future damage.<br>
-        Call this endpoint to get a challenge, then complete the challenge.
-        The challenge received from this endpoint must be completed in 5 minutes.<br>
-        To complete the challenge, sign the `instance address to bytes` + `uuid bytes` and base64 the signature.
+      description: When the private key gets compromised and you have the key, you may "revoke" it.
+        To do this, complete a challenge
       parameters:
         - name: challenge
           in: query
+          required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/Uuid'
         - name: signature
           in: query
+          required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/Signature'
 
       responses:
         '200':
@@ -415,6 +416,70 @@ paths:
                   - properties:
                       error:
                         const: challenge_failed
+
+  /federation/instance:
+    get:
+      summary: Verify the instance's ownership of the private key
+      description: Verify that the instance owns the ed25519 private key by providing a uuid challenge.
+      parameters:
+        - name: challenge
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  public_key:
+                    $ref: '#/components/schemas/PublicKey'
+                  signature:
+                    $ref: '#/components/schemas/Signature'
+                  address:
+                    $ref: '#/components/schemas/Address'
+        '400':
+          description: Challenge is not a uuid
+    post:
+      summary: Refresh identity token
+      description: Request a new identity token by completing a challenge
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                challenge:
+                  $ref: '#/components/schemas/Uuid'
+                signature:
+                  $ref: '#/components/schemas/Signature'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  identity_token:
+                    type: string
+              example:
+                identity_token: Pheikae3eeghahn8oruire this can literally be anything <128 chars
+
+  /federation/challenge:
+    post:
+      summary: Create a new UUID for a challenge
+      description: This challenge will be valid for 120 seconds and used to validate that your own your private key.<br>
+        To complete a challenge, sign the `instance address to bytes` + `uuid bytes` and base64 the signature.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                properties:
+                  challenge:
+                    $ref: '#/components/schemas/Uuid'
+
 
 components:
   schemas:
@@ -546,16 +611,20 @@ components:
       description: A base64 URL encoded ed25519 public key
       type: string
       example: "0nqH2kJLWxfqdH0QIsKJp84Ck9OhPWCHZ3uMmcoknSY"
+    Signature:
+      description: A base64 encoded ed25519 signature
+      type: string
+      example: "7lv2/Z05t53d6LyjA+kXFO5gSIO308sgJ3pX5YAB2Kw9wXP6ZztXrYfkUVSRW0b+cIlPul7F5WQ9dPRPuYH3AA=="
     Address:
       description: An address pointing to another DFMailbox instance
       type: string
       example: "dfm.dftools.dev"
     Uuid:
       type: string
-      description: A Minecraft Player UUID
+      description: A UUID (universally unique identifier)
       examples:
-        - "069a79f444e94726a5befca90e38aaf5"
         - "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+        - "069a79f444e94726a5befca90e38aaf5"
     PlotId:
       type: integer
       format: int32
@@ -605,7 +674,7 @@ components:
 
   parameters:
     PlotId:
-    - name: plot_id
+      name: plot_id
       in: path
       required: true
       schema:
