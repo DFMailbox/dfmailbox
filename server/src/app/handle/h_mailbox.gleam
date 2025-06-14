@@ -19,7 +19,7 @@ import sql
 import wisp
 
 pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
-  use msg_id <- helper.require_id(query)
+  use msg_id <- helper.require_id(query, "msg_id")
   let limit =
     list.key_find(query, "limit")
     // maybe this should be a 400
@@ -195,7 +195,7 @@ pub fn enqueue(
 }
 
 pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
-  use msg_id <- helper.require_id(query)
+  use msg_id <- helper.require_id(query, "msg_id")
   let limit =
     list.key_find(query, "limit")
     // maybe this should be a 400

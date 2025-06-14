@@ -38,6 +38,8 @@ pub fn middleware(
     |> cors_builder.allow_method(http.Options)
     |> cors_builder.allow_header("content-type")
     |> cors_builder.allow_header("x-api-key")
+    |> cors_builder.allow_header("user-agent")
+    |> cors_builder.allow_header("x-identity-key")
     |> cors_builder.max_age(60 * 60)
   use req <- cors_builder.wisp_middleware(req, cors)
 
@@ -182,6 +184,7 @@ fn process_plot_auth(
       }
     }
     False -> {
+      echo info.ip_address
       list.contains(df_ips, info.ip_address)
     }
   }

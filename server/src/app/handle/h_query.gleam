@@ -112,6 +112,7 @@ fn mailbox_reply_to_json(mailbox_reply: MailboxReply) -> json.Json {
       ])
     ReplyError(msg:) ->
       json.object([#("type", json.string("error")), #("msg", json.string(msg))])
+
     Cleanup -> json.object([#("type", json.string("cleanup"))])
   }
 }
