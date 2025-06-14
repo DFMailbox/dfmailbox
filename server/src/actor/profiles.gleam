@@ -60,7 +60,10 @@ pub fn fetch(cache: Cache, name: String) -> Result(Uuid, String) {
     Ok(it) -> Ok(it)
     Error(_) -> {
       let assert Ok(req) =
-        request.to("https://api.mojang.com/users/profiles/minecraft/" <> name)
+        request.to(
+          "https://api.minecraftservices.com/minecraft/profile/lookup/name/"
+          <> name,
+        )
       use res <- result.try(
         httpc.send(req)
         |> result.map_error(fn(err) {

@@ -1,9 +1,12 @@
+import actor/cache
 import app/ctx
 import app/handle/helper
+import cors_builder
 import ed25519/public_key
 import gleam/bit_array
 import gleam/bool
 import gleam/dict
+import gleam/http
 import gleam/http/request
 import gleam/int
 import gleam/list
@@ -25,6 +28,18 @@ pub fn middleware(
   // I miss this in rust...
   use <- wisp.rescue_crashes()
   use req <- wisp.handle_head(req)
+  let cors =
+    cors_builder.new()
+    |> cors_builder.allow_all_origins()
+    |> cors_builder.allow_method(http.Get)
+    |> cors_builder.allow_method(http.Post)
+    |> cors_builder.allow_method(http.Put)
+    |> cors_builder.allow_method(http.Delete)
+    |> cors_builder.allow_method(http.Options)
+    |> cors_builder.allow_header("content-type")
+    |> cors_builder.allow_header("x-api-key")
+    |> cors_builder.max_age(60 * 60)
+  use req <- cors_builder.wisp_middleware(req, cors)
 
   handle_request(req)
 }
@@ -39,6 +54,36 @@ pub fn log_request(
       wisp.log_request(req, handler)
     }
   }
+}
+
+pub fn auth_federation(
+  req: wisp.Request,
+  ctx: ctx.Context,
+  handle_request: fn(public_key.PublicKey) -> wisp.Response,
+) -> wisp.Response {
+  case get_token(req, ctx) {
+    Ok(key) -> handle_request(key)
+    Error(err) -> err
+  }
+}
+
+fn get_token(
+  req: wisp.Request,
+  ctx: ctx.Context,
+) -> Result(public_key.PublicKey, wisp.Response) {
+  use token <- result.try(
+    list.key_find(req.headers, "x-identity-token")
+    |> helper.replace_construct_error("x-identity-token not found", 401),
+  )
+  use b64_token <- result.try(
+    bit_array.base64_decode(token)
+    |> helper.replace_construct_error("identity token is not base6", 401),
+  )
+  use key <- result.try(
+    cache.get(ctx.ext_identity_key_map, b64_token)
+    |> helper.replace_construct_error("identity token invalid", 401),
+  )
+  Ok(key)
 }
 
 pub fn auth_midleware(

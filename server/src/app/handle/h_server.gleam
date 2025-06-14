@@ -78,9 +78,8 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
       }
     Error(Nil) -> {
       // Register this
-      address.identify(ctx.conn, req_key_bits, body.address)
-      |> result.replace_error(helper.construct_error("database error", 500))
-      |> result.replace(Nil)
+      address.identify(ctx.conn, req_key_bits, body.address, ctx.instance)
+      Ok(Nil)
     }
   }
   use Nil <- helper.try_res(res)
@@ -98,7 +97,7 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   let source =
     crypto.strong_random_bytes(48) |> bit_array.base64_url_encode(False)
   let actual_key = crypto.hash(crypto.Sha256, source |> bit_array.from_string)
-  cache.set(ctx.identity_key_map, actual_key, requester_key)
+  cache.set(ctx.identity_key_map, requester_key, actual_key)
 
   server.IdentifyInstanceResponse(
     identity_key: source,

@@ -17,7 +17,9 @@ pub type Context {
     profiles: profiles.Cache,
     df_ips: List(mist.IpAddress),
     mailbox_map: cache.Cache(Int, plot_mailbox.PlotMailbox),
-    identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
+    /// Keys issued by other instances to validate this instance
+    identity_key_map: cache.Cache(public_key.PublicKey, BitArray),
+    /// Keys issued by this instance to validate other instances
     ext_identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
     instance: address.InstanceAddress,
     nginx: Bool,
@@ -38,7 +40,10 @@ pub fn get_mailbox(ctx: Context, id: Int, msg_id: Int) {
   }
 }
 
-pub fn get_mailbox_lazy(ctx: Context, id: Int) {
+pub fn get_mailbox_lazy(
+  ctx: Context,
+  id: Int,
+) -> Result(plot_mailbox.PlotMailbox, Nil) {
   case
     ctx.mailbox_map
     |> cache.get(id)

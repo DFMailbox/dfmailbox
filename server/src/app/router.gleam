@@ -1,5 +1,6 @@
 import app/ctx
 import app/handle/h_api_key
+import app/handle/h_fed_mailbox
 import app/handle/h_instance
 import app/handle/h_mailbox
 import app/handle/h_plot
@@ -194,11 +195,12 @@ pub fn handle_request(
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
-            ["mailbox"] ->
-              case req.method {
-                http.Post -> todo as "post mailbox"
-                _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
-              }
+            ["mailbox"] -> {
+              use key <- web.auth_federation(req, ctx)
+              use <- wisp.require_method(req, http.Post)
+              use json <- wisp.require_json(req)
+              h_fed_mailbox.post(json, key, ctx)
+            }
             _ -> wisp.not_found()
           }
         _ -> wisp.not_found()
