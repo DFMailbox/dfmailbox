@@ -110,12 +110,14 @@ paths:
         description: The id to get messages after
         in: query
         required: true
+        example: 0
         schema:
           $ref: '#/components/schemas/MailboxItemId'
 
       - name: limit
         in: query
         required: false
+        example: 50
         schema:
           $ref: '#/components/schemas/MailboxItemId'
       responses:
@@ -144,12 +146,14 @@ paths:
           description: The id to get messages after
           in: query
           required: true
+          example: 0
           schema:
             $ref: '#/components/schemas/MailboxItemId'
 
         - name: limit
           in: query
           required: false
+          example: 50
           schema:
             $ref: '#/components/schemas/MailboxItemId'
       responses:
@@ -380,42 +384,6 @@ paths:
                         const: mismatched_public_key
                       expected_key:
                         $ref: '#/components/schemas/PublicKey'
-    delete:
-      summary: Mark instance key as compromised
-      description: When the private key gets compromised and you have the key, you may "revoke" it.
-        To do this, complete a challenge
-      parameters:
-        - name: challenge
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/Uuid'
-        - name: signature
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/Signature'
-
-      responses:
-        '200':
-          description: Key successfully marked as compromised
-        '201':
-          description: Created challenge
-          content:
-            application/json:
-              schema:
-                properties:
-                  challenge:
-                    $ref: '#/components/schemas/Uuid'
-        '400':
-          description: Error
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - properties:
-                      error:
-                        const: challenge_failed
 
   /federation/instance:
     get:
@@ -464,6 +432,42 @@ paths:
                     type: string
               example:
                 identity_token: Pheikae3eeghahn8oruire this can literally be anything <128 chars
+    delete:
+      summary: Mark instance key as compromised
+      description: When the private key gets compromised and you have the key, you may "revoke" it.
+        To do this, complete a challenge
+      parameters:
+        - name: challenge
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: signature
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Signature'
+
+      responses:
+        '200':
+          description: Key successfully marked as compromised
+        '201':
+          description: Created challenge
+          content:
+            application/json:
+              schema:
+                properties:
+                  challenge:
+                    $ref: '#/components/schemas/Uuid'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - properties:
+                      error:
+                        const: challenge_failed
 
   /federation/challenge:
     post:
@@ -555,6 +559,35 @@ components:
           # TODO: Check if this is really useful
           description: The ID of the next item
           $ref: '#/components/schemas/MailboxItemId'
+      example:
+        items:
+          - msg_id: 33
+            timestamp: 1749866772
+            plot_origin: 43780
+            val:
+              id: dict
+              val:
+                name:
+                  id: str
+                  val: Notch
+                msg:
+                  id: comp
+                  val: <b>Hello chat</b>
+          - msg_id: 34
+            timestamp: 1749866774
+            plot_origin: 43780
+            val:
+              id: dict
+              val:
+                name:
+                  id: str
+                  val: Jeremaster
+                msg:
+                  id: comp
+                  val: Wow this is a real message!
+        until: 34
+        current_id: 35
+
     MailboxQueryOperation:
       oneOf:
         - description: Imitates GET /plot/mailbox
@@ -570,7 +603,7 @@ components:
                 - integer
           example:
             type: peek
-            after: 4
+            after: 32
             limit: null
         - description: Imitates DELETE /plot/mailbox
           properties:
@@ -581,7 +614,7 @@ components:
               $ref: '#/components/schemas/MailboxItemId'
           example:
             type: dequeue
-            after: 4
+            after: 32
         - description: Imitates POST /plot/mailbox
           properties:
             type:
@@ -625,6 +658,9 @@ components:
               const: enqueue
             msg_id:
               $ref: '#/components/schemas/MailboxItemId'
+          example:
+            type: enqueue
+            msg_id: 35
         - properties:
             type:
               const: cleanup
@@ -689,10 +725,12 @@ components:
       type: integer
       format: int32
       description: An id assigned by DiamondFire to identify a plot, this ID can be used in /plot <plot_id>
+      example: 41808
     MailboxItemId:
       type: integer
       format: int64
       description: A mailbox item id that refers to an item in any mailbox
+      example: 42
     DFJson:
       description: A DFJson object
       $ref: 'https://dftools.dev/dfjson/schema/dfjson-0.1.1.json'
