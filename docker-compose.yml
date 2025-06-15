@@ -17,6 +17,8 @@ services:
       context: ./server
       # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
       target: ${TARGET:-prod}
+      args:
+        TESTING: "true"
     ports:
       - ${DFM_PORT:-8080}:${DFM_INT_PORT:-8080}
     depends_on:

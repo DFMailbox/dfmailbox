@@ -1,3 +1,4 @@
+import compile_time
 import gleam/bit_array
 import gleam/dynamic/decode
 import gleam/http
@@ -76,7 +77,7 @@ pub fn request(address: InstanceAddress) -> request.Request(String) {
   let req =
     request.new()
     |> request.set_host(address.host)
-    |> request.set_scheme(http.Https)
+    |> request.set_scheme(compile_time.scheme)
   let req = case address.port {
     option.None -> req
     option.Some(port) -> req |> request.set_port(port)

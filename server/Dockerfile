@@ -1,3 +1,5 @@
+ARG TESTING
+
 FROM elixir:1.18.4-otp-27-alpine AS base
 RUN apk --no-cache add curl
 RUN mix local.hex --force
@@ -10,6 +12,19 @@ RUN mkdir -p src && gleam build
 COPY ./test/ test
 COPY ./src/ src
 
+
+# Dev
+FROM base AS dev-true
+# Testing is true
+COPY ./testing.gleam src/compile_time.gleam
+
+FROM base AS dev-false
+
+FROM dev-${TESTING} AS dev
+ENTRYPOINT ["gleam"]
+CMD ["run"]
+
+# Prod
 FROM base AS build
 RUN gleam export erlang-shipment
 
@@ -20,8 +35,4 @@ RUN \
 COPY --from=build /app/build/erlang-shipment /app
 WORKDIR /app
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["run"]
-
-FROM base AS dev
-ENTRYPOINT ["gleam"]
 CMD ["run"]

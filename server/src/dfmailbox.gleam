@@ -3,6 +3,7 @@ import actor/profiles
 import app/address
 import app/ctx
 import app/router
+import compile_time
 import dot_env
 import dot_env/env
 import ed25519/private_key
@@ -17,6 +18,7 @@ import pog
 import wisp
 
 pub fn main() -> Nil {
+  echo compile_time.scheme
   wisp.configure_logger()
   dot_env.load_default()
 
