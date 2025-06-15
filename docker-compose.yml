@@ -1,16 +1,4 @@
 services:
-  postgres:
-    image: postgres:latest
-    ports:
-      - "${DFM_POSTGRES_PORT}:5432"
-    environment:
-      POSTGRES_DB: ${DFM_POSTGRES_DB:-dfmailbox}
-      POSTGRES_USER: ${DFM_POSTGRES_USER:-dfuser}
-      POSTGRES_PASSWORD: ${DFM_POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
   webserver:
     init: true
     build:
@@ -47,8 +35,30 @@ services:
       - "-database=postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}?sslmode=disable"
       - "up"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+        restart: true
     restart: "no"
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - "${DFM_POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${DFM_POSTGRES_DB:-dfmailbox}
+      POSTGRES_USER: ${DFM_POSTGRES_USER:-dfuser}
+      POSTGRES_PASSWORD: ${DFM_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DFM_POSTGRES_USER:-dfuser} -d ${DFM_POSTGRES_DB:-dfmailbox}"]
+      interval: 3s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 0.5s
+      retries: 5
+
 
 volumes:
   postgres_data:

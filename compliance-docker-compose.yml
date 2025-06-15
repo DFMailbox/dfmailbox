@@ -1,61 +1,23 @@
+networks:
+  testing_network:
+    driver: bridge
+
 services:
-  dfserver:
-    init: true
-    build:
-      context: ./compliance
-      # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
-      target: ${TARGET:-prod}
-    environment:
-      EXPOSED_PORT: 8080
-      ROLE: dfserver
-      HOST: webserver
-      PORT: ${DFM_INT_PORT:-8080}
-      FEDERATION_HOST: federation
-      FEDERATION_PORT: 8080
-    depends_on:
-      webserver:
-        condition: service_healthy
-    develop:
-      watch:
-        - action: rebuild
-          path: ./compliance/src
-    stop_grace_period: ${DEV_GRACE_PERIOD:-5s}
-
-  federation:
-    init: true
-    build:
-      context: ./compliance
-      target: ${TARGET:-prod}
-    environment:
-      EXPOSED_PORT: 8080
-      ROLE: federation
-      HOST: webserver
-      PORT: ${DFM_INT_PORT:-8080}
-      DF_HOST: dfserver
-      DF_PORT: 8080
-    depends_on:
-      webserver:
-        condition: service_healthy
-    develop:
-      watch:
-        - action: rebuild
-          path: ./compliance/src
-    stop_grace_period: ${DEV_GRACE_PERIOD:-5s}
-
-
   webserver:
     init: true
     build:
       context: ./server
       # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
       target: ${TARGET:-prod}
+      args:
+        TESTING: "true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${DFM_INT_PORT:-8080}/healthcheck"]
       interval: 1s
       timeout: 2s
       retries: 3
     ports:
-      - ${DFM_PORT:-8080}:${DFM_INT_PORT:-8080}
+      - ${DFM_INT_PORT:-8080}
     depends_on:
       migrator:
         condition: service_completed_successfully
@@ -70,6 +32,8 @@ services:
           path: ./server/src
     stop_grace_period: ${DFM_DEV_GRACE_PERIOD:-5s}
     restart: no
+    networks:
+      - testing_network
 
   migrator:
     image: migrate/migrate
@@ -80,8 +44,12 @@ services:
       - "-database=postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}?sslmode=disable"
       - "up"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+        restart: true
     restart: no
+    networks:
+      - testing_network
 
   postgres:
     image: postgres:latest
@@ -90,13 +58,13 @@ services:
       POSTGRES_USER: ${DFM_POSTGRES_USER:-dfuser}
       POSTGRES_PASSWORD: ${DFM_POSTGRES_PASSWORD}
     restart: no
-    # The healthcheck doesn't work, I give up for now
-    # healthcheck:
-    #   test: [
-    #         "CMD-SHELL",
-    #   "pg_isready -U ${POSTGRES_USER:-FAILURE} -d ${POSTGRES_DB:-FAILURE}"
-    #       ]
-    #   interval: 5s
-    #   timeout: 5s
-    #   retries: 5 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DFM_POSTGRES_USER:-dfuser} -d ${DFM_POSTGRES_DB:-dfmailbox}"]
+      interval: 3s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 0.5s
+      retries: 5
+    networks:
+      - testing_network
 
