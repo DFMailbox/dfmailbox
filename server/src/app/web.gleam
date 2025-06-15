@@ -51,7 +51,7 @@ pub fn log_request(
   handler: fn() -> wisp.Response,
 ) -> wisp.Response {
   case req.path == "/healthcheck" {
-    True -> handler()
+    True -> wisp.ok()
     False -> {
       wisp.log_request(req, handler)
     }
