@@ -11,7 +11,7 @@ watch: .env
 	$(DOCKER_COMPOSE_RUN) watch
 
 compliance_test: .env
-	$(DOCKER_COMPOSE_COMPLIANCE) up --build
+	$(DOCKER_COMPOSE_COMPLIANCE) up -p dfm_compliance --build
 
 .env:
 	@echo -e "\e[31mCannot find .env file, running ./gen_env.sh\e[0m"

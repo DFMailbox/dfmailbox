@@ -1,36 +1,35 @@
 networks:
   testing_network:
     driver: bridge
-
 services:
   webserver:
     init: true
     build:
       context: ./server
-      # In .env make TARGET=dev for faster builds at the cost of size and stopping for some reason
-      target: ${TARGET:-prod}
+      target: dev
       args:
         TESTING: "true"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${DFM_INT_PORT:-8080}/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthcheck"]
       interval: 1s
       timeout: 2s
       retries: 3
     ports:
-      - ${DFM_INT_PORT:-8080}
+      - 8080
     depends_on:
       migrator:
         condition: service_completed_successfully
     environment:
-      PORT: ${DFM_INT_PORT:-8080}
-      DATABASE_URL: postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}
-      HOST: ${DFM_HOST}
-      SECRET_KEY: ${DFM_SECRET_KEY}
+      PORT: 8080
+      DATABASE_URL: postgres://dfuser:testing_postgres_password@postgres:5432/dfmailbox
+      TESTING_MODE: true
+      HOST: ${DFMC_ADDRESS}
+      SECRET_KEY: ${DFMC_PRIVATE_KEY}
     develop:
       watch:
         - action: rebuild
           path: ./server/src
-    stop_grace_period: ${DFM_DEV_GRACE_PERIOD:-5s}
+    stop_grace_period: 1s
     restart: no
     networks:
       - testing_network
@@ -41,7 +40,7 @@ services:
       - ./migrations:/migrations
     command:
       - "-path=/migrations/"
-      - "-database=postgres://${DFM_POSTGRES_USER:-dfuser}:${DFM_POSTGRES_PASSWORD}@postgres:5432/${DFM_POSTGRES_DB:-dfmailbox}?sslmode=disable"
+      - "-database=postgres://dfuser:testing_postgres_password@postgres:5432/dfmailbox?sslmode=disable"
       - "up"
     depends_on:
       postgres:
@@ -54,12 +53,12 @@ services:
   postgres:
     image: postgres:latest
     environment:
-      POSTGRES_DB: ${DFM_POSTGRES_DB:-dfmailbox}
-      POSTGRES_USER: ${DFM_POSTGRES_USER:-dfuser}
-      POSTGRES_PASSWORD: ${DFM_POSTGRES_PASSWORD}
+      POSTGRES_DB: dfmailbox
+      POSTGRES_USER: dfuser
+      POSTGRES_PASSWORD: testing_postgres_password
     restart: no
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DFM_POSTGRES_USER:-dfuser} -d ${DFM_POSTGRES_DB:-dfmailbox}"]
+      test: ["CMD-SHELL", "pg_isready -U dfuser -d dfmailbox"]
       interval: 3s
       timeout: 5s
       start_period: 5s

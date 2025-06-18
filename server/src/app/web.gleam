@@ -106,6 +106,7 @@ pub fn auth_midleware(
           dict.get(headers, "x-real-ip"),
           ctx.df_ips,
           ctx.nginx,
+          ctx.testing_mode,
         ),
       fn() {
         result.unwrap(
@@ -156,6 +157,7 @@ fn process_plot_auth(
   x_real_ip: Result(String, Nil),
   df_ips: List(mist.IpAddress),
   is_nginx: Bool,
+  bypass_ip_check: Bool,
 ) -> Result(Authentication, Nil) {
   use info <- result.try(info)
   let ok = case is_nginx {
@@ -187,6 +189,10 @@ fn process_plot_auth(
       echo info.ip_address
       list.contains(df_ips, info.ip_address)
     }
+  }
+  let ok = case bypass_ip_check {
+    True -> True
+    False -> ok
   }
   use <- bool.guard(!ok, Error(Nil))
 

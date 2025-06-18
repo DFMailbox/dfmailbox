@@ -23,6 +23,7 @@ pub type Context {
     ext_identity_key_map: cache.Cache(BitArray, public_key.PublicKey),
     instance: address.InstanceAddress,
     nginx: Bool,
+    testing_mode: Bool,
   )
 }
 

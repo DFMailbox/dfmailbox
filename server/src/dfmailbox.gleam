@@ -45,6 +45,7 @@ pub fn main() -> Nil {
       mailbox_map: cache.new(),
       nginx: env.is_nginx,
       instance: env.host,
+      testing_mode: env.testing_mode,
     )
 
   let assert Ok(_subj) =
@@ -54,13 +55,28 @@ pub fn main() -> Nil {
     |> mist.port(env.port)
     |> mist.start_http
 
-  process.sleep_forever()
+  case env.testing_mode {
+    True -> testing_mode_tantrum()
+    False -> process.sleep_forever()
+  }
+}
+
+fn testing_mode_tantrum() {
+  wisp.log_alert(
+    "=== YOU ARE RUNNING TESTING MODE, ANYONE CAN IMPERSONATE ANYONE ===",
+  )
+  wisp.log_alert(
+    "=== IF YOU DO NOT KNOW WHAT THIS IS, UNSET ENV VARIABLE `TESTING_MODE` ===",
+  )
+  process.sleep(5000)
+  testing_mode_tantrum()
 }
 
 fn get_env() -> ProgramEnv {
   let assert Ok(secret_key) = env.get_string("SECRET_KEY")
   let assert Ok(database_url) = env.get_string("DATABASE_URL")
   let assert Ok(port) = env.get_int("PORT")
+  let testing_mode = env.get_bool_or("TESTING_MODE", False)
   let assert Ok(host) =
     env.get_then("HOST", fn(host) {
       address.parse(host) |> result.replace_error("Host is invalid")
@@ -98,7 +114,7 @@ fn get_env() -> ProgramEnv {
 
   let df_ips = [mist.IpV4(51, 222, 245, 229), ..extra_ips]
 
-  ProgramEnv(secret_key, database_url, host, port, df_ips, nginx)
+  ProgramEnv(secret_key, database_url, host, port, df_ips, testing_mode, nginx)
 }
 
 pub type ProgramEnv {
@@ -108,6 +124,7 @@ pub type ProgramEnv {
     host: address.InstanceAddress,
     port: Int,
     allowed_ips: List(mist.IpAddress),
+    testing_mode: Bool,
     is_nginx: Bool,
   )
 }
