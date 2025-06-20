@@ -2,7 +2,7 @@ networks:
   testing_network:
     driver: bridge
 services:
-  webserver:
+  dfmailbox:
     init: true
     build:
       context: ./server
