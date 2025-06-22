@@ -1,7 +1,6 @@
 import actor/cache
 import app/address
 import app/ctx
-import app/ext
 import app/handle/helper
 import app/struct/server
 import ed25519/public_key
@@ -44,9 +43,10 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
 pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
   use body <- helper.guard_json(json, server.identify_instance_body_decoder())
   use requester_key <- helper.try_res(
-    ext.ping_sign(body.address)
+    // ext.ping_sign(body.address)
+    todo
     |> result.map_error(fn(err) {
-      helper.construct_error(err |> ext.serialize_ping_error, 400)
+      helper.construct_error(err |> todo as "serialize ping error", 400)
     }),
   )
   let req_key_bits = requester_key |> public_key.serialize_to_bits

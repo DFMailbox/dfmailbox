@@ -2,7 +2,7 @@ import actor/cache
 import actor/plot_mailbox
 import app/address
 import app/ctx
-import app/ext
+import app/ext/cross_send
 import app/handle/helper
 import app/struct/mailbox
 import app/web
@@ -86,7 +86,7 @@ pub fn enqueue_other(
       let send = fn() {
         use identity_token <- result.try(cache.get(ctx.identity_key_map, key))
         case
-          ext.cross_send(
+          cross_send.send(
             address,
             identity_token,
             auth_plot.id,
@@ -103,14 +103,15 @@ pub fn enqueue_other(
             |> Ok
           Error(err) ->
             case err {
-              ext.CSHttpError(err) ->
+              cross_send.CSHttpError(err) ->
                 helper.construct_error(
                   "http error: " <> string.inspect(err),
                   400,
                 )
                 |> Ok
-              ext.InvalidIdentity -> Error(Nil)
-              ext.PostError(err) ->
+
+              cross_send.InvalidIdentity -> Error(Nil)
+              cross_send.PostError(err) ->
                 helper.construct_error("Post error: " <> err, 400)
                 |> Ok
             }

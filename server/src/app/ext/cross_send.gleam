@@ -18,35 +18,7 @@ import gleam/result
 import gleam/string
 import youid/uuid
 
-/// Hit another instance's `GET /v0/federation/instance`
-pub fn ping_sign(
-  address: address.InstanceAddress,
-) -> Result(public_key.PublicKey, PingInstanceError) {
-  let uuid = uuid.v4()
-  let challenge = address.generate_challenge(address, uuid)
-
-  let req =
-    address.request(address)
-    |> request.set_path("/v0/federation/instance")
-    |> request.set_query([#("challenge", uuid |> uuid.to_string)])
-    |> request.set_method(http.Get)
-  use res <- result.try(httpc.send(req) |> result.map_error(HttpError))
-  use <- bool.guard(
-    res.status != 200,
-    Error(UnexpectedStatus(res.status, res.body)),
-  )
-
-  use json <- result.try(
-    json.parse(res.body, server.signing_response_decoder())
-    |> result.map_error(JsonDecodeError(_, res.body)),
-  )
-  let valid =
-    signature.validate_signature(json.signature, challenge, json.public_key)
-  use <- bool.guard(!valid, Error(MismatchedKey(json.public_key)))
-  Ok(json.public_key)
-}
-
-pub type PingInstanceError {
+pub type OldPingInstanceError {
   HttpError(httpc.HttpError)
   JsonDecodeError(json.DecodeError, String)
   UnexpectedStatus(Int, String)
@@ -54,7 +26,7 @@ pub type PingInstanceError {
   Other(String)
 }
 
-pub fn serialize_ping_error(err: PingInstanceError) {
+pub fn serialize_ping_error(err: OldPingInstanceError) {
   case err {
     HttpError(err) -> string.inspect(err)
     JsonDecodeError(err, body) -> {
@@ -78,6 +50,7 @@ pub fn serialize_ping_error(err: PingInstanceError) {
 }
 
 /// Hit another instance's `POST /v0/federation/instance` endpoint
+@deprecated("remove this eventually")
 pub fn request_key_exchange(
   public_key: public_key.PublicKey,
   address: address.InstanceAddress,
@@ -99,6 +72,7 @@ pub fn request_key_exchange(
     |> request.set_body(
       body |> server.identify_instance_body_to_json |> json.to_string,
     )
+  echo req
   use res <- result.try(httpc.send(req) |> result.map_error(HttpError))
   use <- bool.guard(
     res.status != 200,
@@ -126,7 +100,7 @@ pub fn request_key_exchange(
   |> Ok
 }
 
-pub fn cross_send(
+pub fn send(
   address: address.InstanceAddress,
   identity_key: BitArray,
   sender: Int,
