@@ -38,6 +38,7 @@ services:
     extra_hosts:
       # For some reason, host gateway doesn't work resulting in this terribleness
       - "host.docker.internal:${DFMC_HOST_GATEWAY:-host-gateway}"
+      - "alt-host.docker.internal:${DFMC_HOST_GATEWAY:-host-gateway}"
 
   migrator:
     image: migrate/migrate

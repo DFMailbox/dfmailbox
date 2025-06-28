@@ -10,6 +10,7 @@ import gleam/option
 import gleam/regexp
 import gleam/result
 import gleam/string
+import pog
 import sql
 import youid/uuid
 
@@ -97,9 +98,15 @@ pub fn identify(
   case this_address == address {
     True -> 0
     False -> {
-      let assert Ok(res) =
-        sql.identify_instance(conn, public_key, to_string(address))
-      res.count
+      case sql.identify_instance(conn, public_key, to_string(address)) {
+        Ok(res) -> res.count
+        Error(err) -> {
+          case err {
+            pog.ConstraintViolated(message: _, constraint: _, detail: _) -> 0
+            _ -> panic
+          }
+        }
+      }
     }
   }
 }

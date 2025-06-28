@@ -28,22 +28,23 @@ pub fn problem_response(problem: Problem) {
   |> wisp.set_body(wisp.Text(problem |> to_json |> json.to_string_tree))
 }
 
-fn optional_insert(dict: dict.Dict(a, b), a: a, b: option.Option(b)) {
+fn optional_push(dict: List(#(a, b)), a: a, b: option.Option(b)) {
   case b {
-    Some(b) -> dict.insert(dict, a, b)
+    Some(b) -> list.prepend(dict, #(a, b))
     None -> dict
   }
 }
 
 pub fn to_json(problem p: Problem) -> json.Json {
-  p.extension
-  |> dict.insert("type", p.kind |> json.string)
-  |> dict.insert("status", p.status |> json.int)
-  |> dict.insert("title", p.title |> json.string)
-  |> optional_insert("detail", p.detail |> option.map(json.string))
-  |> optional_insert("instance", p.instance |> option.map(json.string))
-  |> dict.to_list()
-  |> json.object()
+  dict.drop(p.extension, ["type", "status", "title", "detail", "instance"])
+  |> dict.to_list
+  |> optional_push("detail", p.detail |> option.map(json.string))
+  |> optional_push("instance", p.instance |> option.map(json.string))
+  |> list.prepend(#("type", p.kind |> json.string))
+  |> list.prepend(#("status", p.status |> json.int))
+  |> list.prepend(#("title", p.title |> json.string))
+  |> list.reverse
+  |> json.object
 }
 
 /// public_key - url base64 key
