@@ -1,0 +1,36 @@
+# .github/workflows/compliance-test.yml
+
+name: Compliance Test Suite
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  run-ginkgo-compliance-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24' # Adjust Go version as needed for your project
+
+    - name: Install Ginkgo and Gomega (if not already vendored or in go.mod)
+      run: |
+        go install github.com/onsi/ginkgo/v2/ginkgo@latest
+        # go install github.com/onsi/gomega/...@latest # Optional, if Gomega tools are needed
+
+    - name: Run compliance tests with Ginkgo
+      working-directory: ./compliance/test
+      run: ginkgo -p
+
