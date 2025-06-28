@@ -28,5 +28,5 @@ jobs:
 
     - name: Run compliance tests with Ginkgo
       working-directory: ./compliance/test
-      run: ginkgo -p
+      run: ginkgo -p -v
 
