@@ -1,0 +1,32 @@
+name: Compliance Test Suite
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  run-compliance-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Install Ginkgo and Gomega
+      run: |
+        go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+    - name: Run compliance tests with Ginkgo
+      working-directory: ./compliance/test
+      run: ginkgo -p -v
+
