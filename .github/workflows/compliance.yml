@@ -14,6 +14,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -25,6 +27,6 @@ jobs:
         go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
     - name: Run compliance tests with Ginkgo
-      working-directory: ../compliance/test
+      working-directory: ./compliance/test
       run: ginkgo -p
 
