@@ -142,7 +142,7 @@ pub fn decode_error_format(err: decode.DecodeError) {
   <> "'"
 }
 
-pub fn transform_decode_err(err: List(decode.DecodeError)) {
+fn transform_decode_err(err: List(decode.DecodeError)) {
   list.map(err, decode_error_format)
   |> json.array(of: json.string)
   |> json.to_string_tree

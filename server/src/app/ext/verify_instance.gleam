@@ -1,4 +1,5 @@
 import app/address
+import app/handle/problem
 import app/struct/server
 import ed25519/public_key
 import ed25519/signature
@@ -27,7 +28,7 @@ pub fn ping_sign(
     |> request.set_query([#("challenge", uuid |> uuid.to_string)])
     |> request.set_method(http.Get)
   use res <- result.try(
-    httpc.send(req) |> result.map_error(InstanceUnreachable),
+    httpc.send(req) |> result.map_error(InstanceUnreachable(address, _)),
   )
   use <- bool.guard(
     res.status != 200,
@@ -40,64 +41,44 @@ pub fn ping_sign(
   )
   let valid =
     signature.validate_signature(json.signature, challenge, json.public_key)
-  use <- bool.guard(!valid, Error(ChallengeFailed(req, res)))
+  use <- bool.guard(!valid, Error(ChallengeFailed(challenge)))
   Ok(#(json.public_key, json.address))
 }
 
 pub type PingInstanceError {
-  InstanceUnreachable(httpc.HttpError)
+  InstanceUnreachable(address.InstanceAddress, httpc.HttpError)
   JsonDecodeError(
     json.DecodeError,
     request.Request(String),
     response.Response(String),
   )
   UnexpectedStatus(Int, request.Request(String), response.Response(String))
-  ChallengeFailed(request.Request(String), response.Response(String))
+  ChallengeFailed(BitArray)
 }
 
 pub fn ping_instance_error_to_json(error: PingInstanceError) {
   case error {
-    InstanceUnreachable(err) -> {
-      json.object([
-        #("error", json.string("instance_unreachable")),
-        #("error_message", err |> string.inspect |> json.string),
-      ])
+    InstanceUnreachable(addr, err) -> {
+      problem.instance_unreachable(400, addr, err |> string.inspect)
     }
     JsonDecodeError(err_msg, req, res) -> {
-      json.object([
-        #("error", json.string("non_compliance")),
-        #(
-          "error_message",
-          ["Json parse error: ", err_msg |> string.inspect]
-            |> append_req_res(req, res)
-            |> string.join("")
-            |> json.string,
-        ),
-      ])
+      problem.non_compliance(
+        400,
+        ["Json parse error: ", err_msg |> string.inspect]
+          |> append_req_res(req, res)
+          |> string.join(""),
+      )
     }
     UnexpectedStatus(code, req, res) -> {
-      json.object([
-        #("error", json.string("non_compliance")),
-        #(
-          "error_message",
-          ["Incorrect status code: ", code |> int.to_string]
-            |> append_req_res(req, res)
-            |> string.join("")
-            |> json.string,
-        ),
-      ])
+      problem.non_compliance(
+        400,
+        ["Incorrect status code: ", code |> int.to_string]
+          |> append_req_res(req, res)
+          |> string.join(""),
+      )
     }
-    ChallengeFailed(req, res) -> {
-      json.object([
-        #("error", json.string("non_compliance")),
-        #(
-          "error_message",
-          ["Signing challenge failed"]
-            |> append_req_res(req, res)
-            |> string.join("")
-            |> json.string,
-        ),
-      ])
+    ChallengeFailed(challenge_bytes) -> {
+      problem.challenge_failed(400, challenge_bytes)
     }
   }
 }

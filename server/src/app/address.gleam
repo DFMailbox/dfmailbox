@@ -3,6 +3,7 @@ import gleam/bit_array
 import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
+import gleam/httpc
 import gleam/int
 import gleam/json
 import gleam/option
@@ -94,11 +95,11 @@ pub fn identify(
   this_address: InstanceAddress,
 ) {
   case this_address == address {
-    True -> Nil
+    True -> 0
     False -> {
-      let assert Ok(_) =
+      let assert Ok(res) =
         sql.identify_instance(conn, public_key, to_string(address))
-      Nil
+      res.count
     }
   }
 }

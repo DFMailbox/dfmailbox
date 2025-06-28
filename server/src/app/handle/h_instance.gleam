@@ -2,13 +2,14 @@ import app/address
 import app/ctx
 import app/ext/verify_instance
 import app/handle/helper
+import app/handle/problem
 import app/struct/instance
 import ed25519/public_key
-import gleam/bit_array
 import gleam/bool
 import gleam/dynamic
 import gleam/json
 import gleam/list
+import gleam/option
 import gleam/result
 import sql
 import wisp
@@ -23,30 +24,51 @@ pub fn introduce(json: dynamic.Dynamic, ctx: ctx.Context) {
     |> result.map_error(fn(err) {
       err
       |> verify_instance.ping_instance_error_to_json
-      |> json.to_string_tree
-      |> wisp.json_response(400)
+      |> problem.problem_response
     }),
   )
   use <- bool.guard(
     key != body.public_key,
-    json.object([
-      #("error", "mismatched_address" |> json.string),
-      #("expected_address", address |> address.to_string |> json.string),
-    ])
-      |> json.to_string_tree
-      |> wisp.json_response(400),
+    problem.intro_mismatched_public_key(400, key, body.public_key)
+      |> problem.problem_response,
   )
   use <- bool.guard(
     address != body.address,
-    json.object([
-      #("error", "mismatched_public_key" |> json.string),
-      #("expected_key", address |> address.to_string |> json.string),
-    ])
-      |> json.to_string_tree
-      |> wisp.json_response(400),
+    problem.intro_mismatched_address(400, address, body.address)
+      |> problem.problem_response,
   )
-  // sql.identify_instance(ctx.conn)
-  wisp.ok()
+  case body.update {
+    True -> {
+      let assert Ok(res) =
+        sql.replace_instance(
+          ctx.conn,
+          key |> public_key.serialize_to_bits,
+          address |> address.to_string,
+        )
+      case res.count {
+        1 -> wisp.ok()
+        0 ->
+          problem.no_update_effect(409)
+          |> problem.problem_response()
+        _ -> panic as "unreachable"
+      }
+    }
+    False ->
+      case
+        address.identify(
+          ctx.conn,
+          key |> public_key.serialize_to_bits,
+          address,
+          ctx.instance,
+        )
+      {
+        1 -> wisp.ok()
+        0 ->
+          problem.already_exists(409)
+          |> problem.problem_response()
+        _ -> panic as "unreachable"
+      }
+  }
 }
 
 pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
@@ -56,7 +78,12 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
       use key <- helper.try_res(
         key
         |> public_key.from_base64_url()
-        |> result.map_error(helper.construct_error(_, 400)),
+        |> result.map_error(fn(x) {
+          problem.invalid_request_paramater(400, [
+            problem.Paramater("public_key", x),
+          ])
+          |> problem.problem_response()
+        }),
       )
       use instance <- helper.guard_db(sql.get_instance(
         ctx.conn,
@@ -64,24 +91,38 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
       ))
       use instance <- helper.try_res(
         list.first(instance.rows)
-        |> result.replace_error(helper.construct_error("Unknown instance", 404)),
+        |> result.map_error(fn(_) {
+          problem.unknown_instance(404, key) |> problem.problem_response
+        }),
       )
-      instance.address
-      |> json.nullable(json.string)
+      let instance =
+        instance.address
+        |> option.map(fn(addr) {
+          let assert Ok(addr) = address.parse(addr)
+          addr
+        })
+        |> instance.AddressKeyPair(key)
+        |> instance.address_key_pair_to_json()
+
+      json.object([#("instance", instance)])
       |> json.to_string_tree()
       |> wisp.json_response(200)
     }
     Error(Nil) -> {
       use instance <- helper.guard_db(sql.list_instances(ctx.conn))
-      json.array(instance.rows, fn(inst) {
-        json.object([
-          #(
-            "public_key",
-            inst.public_key |> bit_array.base64_url_encode(True) |> json.string,
-          ),
-          #("address", inst.address |> json.nullable(json.string)),
-        ])
-      })
+      let instances =
+        json.array(instance.rows, fn(inst) {
+          let assert Ok(public_key) =
+            inst.public_key |> public_key.deserialize_all
+          inst.address
+          |> option.map(fn(s) {
+            let assert Ok(s) = address.parse(s)
+            s
+          })
+          |> instance.AddressKeyPair(public_key)
+          |> instance.address_key_pair_to_json()
+        })
+      json.object([#("instances", instances)])
       |> json.to_string_tree()
       |> wisp.json_response(200)
     }

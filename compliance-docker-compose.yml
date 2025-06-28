@@ -73,4 +73,5 @@ services:
       - testing_network
     tmpfs:
       - /var/lib/postgresql/data:size=100m
+    command: -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_wal_size=4GB -c checkpoint_timeout=30min -c wal_buffers=16MB
 

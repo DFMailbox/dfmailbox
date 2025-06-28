@@ -272,13 +272,9 @@ pub fn get_plot(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use address <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(GetPlotRow(
-      id:,
-      owner:,
-      public_key:,
-      address:,
-      mailbox_msg_id:,
-    ))
+    decode.success(
+      GetPlotRow(id:, owner:, public_key:, address:, mailbox_msg_id:),
+    )
   }
 
   "SELECT plot.id, owner, public_key, address, mailbox_msg_id FROM plot
@@ -302,6 +298,26 @@ pub fn identify_instance(db, arg_1, arg_2) {
 
   "INSERT INTO known_instance (public_key, address)
 VALUES ($1, $2)
+"
+  |> pog.query
+  |> pog.parameter(pog.bytea(arg_1))
+  |> pog.parameter(pog.text(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `replace_instance` query
+/// defined in `./src/sql/replace_instance.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.4 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn replace_instance(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "UPDATE known_instance
+SET address = $2
+WHERE public_key = $1;
 "
   |> pog.query
   |> pog.parameter(pog.bytea(arg_1))
@@ -409,13 +425,9 @@ pub fn plot_from_api_key(db, arg_1) {
     use public_key <- decode.field(2, decode.optional(decode.bit_array))
     use address <- decode.field(3, decode.optional(decode.string))
     use mailbox_msg_id <- decode.field(4, decode.int)
-    decode.success(PlotFromApiKeyRow(
-      id:,
-      owner:,
-      public_key:,
-      address:,
-      mailbox_msg_id:,
-    ))
+    decode.success(
+      PlotFromApiKeyRow(id:, owner:, public_key:, address:, mailbox_msg_id:),
+    )
   }
 
   "SELECT plot.id, owner, public_key, address, mailbox_msg_id FROM api_key

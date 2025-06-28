@@ -1,10 +1,10 @@
 # Would use Justfile but Makefile though arcane is ubiquitous
-.PHONY: build compliance_test
+.PHONY: up compliance_test
 
 DOCKER_COMPOSE_RUN = docker compose -f docker-compose.yml
 DOCKER_COMPOSE_COMPLIANCE = docker compose -f compliance-docker-compose.yml
 
-build: .env
+up: .env
 	$(DOCKER_COMPOSE_RUN) up --build
 
 watch: .env
@@ -17,6 +17,10 @@ compliance_test: .env
 compliance_test_verbose: .env
 	cd compliance; \
 	go test -count=1 -v ./...
+
+up_compliance:
+	$(DOCKER_COMPOSE_COMPLIANCE) up --build
+
 
 .env:
 	@echo -e "\e[31mCannot find .env file, running ./gen_env.sh\e[0m"
