@@ -1,9 +1,7 @@
 import compile_time
 import gleam/bit_array
 import gleam/dynamic/decode
-import gleam/http
 import gleam/http/request
-import gleam/httpc
 import gleam/int
 import gleam/json
 import gleam/option

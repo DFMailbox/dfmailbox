@@ -2,7 +2,7 @@ import app/address
 import app/ctx
 import app/ext/verify_instance
 import app/handle/helper
-import app/handle/problem
+import app/problem
 import app/struct/instance
 import ed25519/public_key
 import gleam/bool
@@ -24,18 +24,18 @@ pub fn introduce(json: dynamic.Dynamic, ctx: ctx.Context) {
     |> result.map_error(fn(err) {
       err
       |> verify_instance.ping_instance_error_to_json
-      |> problem.problem_response
+      |> problem.to_response
     }),
   )
   use <- bool.guard(
     key != body.public_key,
     problem.intro_mismatched_public_key(400, key, body.public_key)
-      |> problem.problem_response,
+      |> problem.to_response,
   )
   use <- bool.guard(
     address != body.address,
     problem.intro_mismatched_address(400, address, body.address)
-      |> problem.problem_response,
+      |> problem.to_response,
   )
   case body.update {
     True -> {
@@ -49,7 +49,7 @@ pub fn introduce(json: dynamic.Dynamic, ctx: ctx.Context) {
         1 -> wisp.ok()
         0 ->
           problem.no_update_effect(409)
-          |> problem.problem_response()
+          |> problem.to_response()
         _ -> panic as "unreachable"
       }
     }
@@ -65,7 +65,7 @@ pub fn introduce(json: dynamic.Dynamic, ctx: ctx.Context) {
         1 -> wisp.ok()
         0 ->
           problem.already_exists(409)
-          |> problem.problem_response()
+          |> problem.to_response()
         _ -> panic as "unreachable"
       }
   }
@@ -82,7 +82,7 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
           problem.invalid_request_paramater(400, [
             problem.Paramater("public_key", x),
           ])
-          |> problem.problem_response()
+          |> problem.to_response()
         }),
       )
       use instance <- helper.guard_db(sql.get_instance(
@@ -92,7 +92,7 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
       use instance <- helper.try_res(
         list.first(instance.rows)
         |> result.map_error(fn(_) {
-          problem.unknown_instance(404, key) |> problem.problem_response
+          problem.unknown_instance(404, key) |> problem.to_response
         }),
       )
       let instance =

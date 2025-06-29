@@ -1,3 +1,4 @@
+import app/address
 import app/handle/decoders
 import ed25519/public_key
 import gleam/dynamic/decode
@@ -22,7 +23,7 @@ pub type GetPlotResponse {
     plot_id: Int,
     owner: uuid.Uuid,
     public_key: option.Option(public_key.PublicKey),
-    address: option.Option(String),
+    address: option.Option(address.InstanceAddress),
     mailbox_msg_id: Int,
   )
 }
@@ -37,7 +38,7 @@ pub fn encode_get_plot_response(get_plot_response: GetPlotResponse) -> json.Json
       option.None -> json.null()
       option.Some(value) -> value |> public_key.to_base64_url() |> json.string
     }),
-    #("address", json.nullable(address, json.string)),
+    #("address", json.nullable(address, address.instance_address_to_json)),
     #("mailbox_msg_id", json.int(mailbox_msg_id)),
   ])
 }

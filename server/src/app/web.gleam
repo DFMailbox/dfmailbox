@@ -1,6 +1,8 @@
 import actor/cache
+import app/address
 import app/ctx
 import app/handle/helper
+import app/role
 import cors_builder
 import ed25519/public_key
 import gleam/bit_array
@@ -17,7 +19,6 @@ import mist
 import pog
 import sql
 import wisp
-import youid/uuid
 
 pub fn middleware(
   req: wisp.Request,
@@ -92,7 +93,7 @@ pub fn auth_midleware(
   req: wisp.Request,
   mist: request.Request(mist.Connection),
   ctx: ctx.Context,
-  handle_request: fn(Authentication) -> wisp.Response,
+  handle_request: fn(role.Role) -> wisp.Response,
 ) -> wisp.Response {
   let headers = req.headers |> dict.from_list
 
@@ -111,7 +112,7 @@ pub fn auth_midleware(
       fn() {
         result.unwrap(
           process_ext_auth(ctx.conn, dict.get(headers, "x-api-key")),
-          NoAuth,
+          role.NoAuth,
         )
       },
     )
@@ -121,7 +122,7 @@ pub fn auth_midleware(
 fn process_ext_auth(
   conn: pog.Connection,
   key: Result(String, Nil),
-) -> Result(Authentication, Nil) {
+) -> Result(role.Role, Nil) {
   use key <- result.try(key)
   let bits = key |> bit_array.from_string()
   let assert Ok(plot) = sql.plot_from_api_key(conn, bits)
@@ -129,20 +130,21 @@ fn process_ext_auth(
 
   case plot.public_key {
     option.None ->
-      LocalPlotApi(
+      role.Host(
         id: plot.id,
         owner: plot.owner,
-        api_key: key,
         mailbox_msg_id: plot.mailbox_msg_id,
       )
 
     option.Some(instance) -> {
       let assert Ok(instance) = public_key.deserialize_all(instance)
-      RemotePlotApi(
+      let assert option.Some(addr) = plot.address
+      let assert Ok(address) = address.parse(addr)
+      role.Registered(
         id: plot.id,
         owner: plot.owner,
-        api_key: key,
         instance: instance,
+        address:,
         mailbox_msg_id: plot.mailbox_msg_id,
       )
     }
@@ -158,7 +160,7 @@ fn process_plot_auth(
   df_ips: List(mist.IpAddress),
   is_nginx: Bool,
   bypass_ip_check: Bool,
-) -> Result(Authentication, Nil) {
+) -> Result(role.Role, Nil) {
   use info <- result.try(info)
   let ok = case is_nginx {
     True -> {
@@ -204,69 +206,48 @@ fn process_plot_auth(
       case plot.public_key {
         option.Some(key) -> {
           let assert Ok(key) = public_key.deserialize_all(key)
-          RemotePlot(
+          let assert option.Some(addr) = plot.address
+          let assert Ok(address) = address.parse(addr)
+          role.Registered(
             id: plot.id,
             owner: plot.owner,
-            instance: key,
             mailbox_msg_id: plot.mailbox_msg_id,
+            instance: key,
+            address:,
           )
         }
         option.None ->
-          LocalPlot(
+          role.Host(
             id: plot.id,
             owner: plot.owner,
             mailbox_msg_id: plot.mailbox_msg_id,
           )
       }
     }
-    Error(Nil) -> UnregisteredPlot(id: plot_id, owner: username)
+    Error(Nil) -> role.Unregistered(id: plot_id, owner: username)
   }
   |> Ok
 }
 
-pub type Authentication {
-  NoAuth
-  UnregisteredPlot(id: Int, owner: String)
-  LocalPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
-  RemotePlot(
-    id: Int,
-    owner: uuid.Uuid,
-    instance: public_key.PublicKey,
-    mailbox_msg_id: Int,
-  )
-  LocalPlotApi(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int, api_key: String)
-  RemotePlotApi(
-    id: Int,
-    owner: uuid.Uuid,
-    instance: public_key.PublicKey,
-    mailbox_msg_id: Int,
-    api_key: String,
-  )
-}
-
-/// Can either be RegisteredPlot or ExternalServer
-pub type GenericPlot {
-  GenericPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
-}
-
-pub fn match_generic(auth: Authentication) -> Result(GenericPlot, wisp.Response) {
-  case auth {
-    LocalPlot(a, b, c) -> Ok(GenericPlot(a, b, c))
-    LocalPlotApi(a, b, c, _) -> Ok(GenericPlot(a, b, c))
-    _ -> Error(helper.construct_error("Plot auth required", 403))
-  }
-}
-
-pub fn match_authenticated(auth: Authentication) -> Result(Int, Nil) {
-  case auth {
-    LocalPlot(a, _, _) -> Ok(a)
-    LocalPlotApi(a, _, _, _) -> Ok(a)
-    RemotePlot(a, _, _, _) -> Ok(a)
-    RemotePlotApi(a, _, _, _, _) -> Ok(a)
-    UnregisteredPlot(a, _) -> Ok(a)
-    NoAuth -> Error(Nil)
-  }
-}
+// pub type Authentication {
+//   NoAuth
+//   UnregisteredPlot(id: Int, owner: String)
+//   LocalPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
+//   RemotePlot(
+//     id: Int,
+//     owner: uuid.Uuid,
+//     instance: public_key.PublicKey,
+//     mailbox_msg_id: Int,
+//   )
+//   LocalPlotApi(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int, api_key: String)
+//   RemotePlotApi(
+//     id: Int,
+//     owner: uuid.Uuid,
+//     instance: public_key.PublicKey,
+//     mailbox_msg_id: Int,
+//     api_key: String,
+//   )
+// }
 
 fn parse_user_agent(header: String) -> Result(#(Int, String), Nil) {
   let start = "Hypercube/"

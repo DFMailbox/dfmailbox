@@ -1,7 +1,7 @@
 import actor/plot_mailbox
 import app/ctx
 import app/handle/helper
-import app/web
+import app/role
 import dfjson
 import gleam/bool
 import gleam/dynamic
@@ -13,16 +13,9 @@ import gleam/result
 import sql
 import wisp
 
-pub fn run_query(
-  json: dynamic.Dynamic,
-  auth: web.Authentication,
-  ctx: ctx.Context,
-) {
+pub fn run_query(json: dynamic.Dynamic, role: role.Role, ctx: ctx.Context) {
   use body <- helper.guard_json(json, query_body_decoder())
-  use plot <- helper.try_res(
-    auth
-    |> web.match_generic(),
-  )
+  use plot <- helper.try_res(role |> role.match_host)
 
   let self_mailbox = ctx.get_mailbox(ctx, plot.id, plot.mailbox_msg_id)
   body.queries

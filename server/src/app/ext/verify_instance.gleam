@@ -1,5 +1,5 @@
 import app/address
-import app/handle/problem
+import app/problem
 import app/struct/server
 import ed25519/public_key
 import ed25519/signature

@@ -30,7 +30,7 @@ pub fn guard_db(
 pub fn guard_db_constraint(
   result: Result(a, pog.QueryError),
   constraint: String,
-  error_response: wisp.Response,
+  error_response: fn() -> wisp.Response,
   body: fn(a) -> wisp.Response,
 ) {
   case result {
@@ -43,7 +43,7 @@ pub fn guard_db_constraint(
       case err {
         pog.ConstraintViolated(_, constr, _) ->
           case constr == constraint {
-            True -> error_response
+            True -> error_response()
             False -> error()
           }
         _ -> error()

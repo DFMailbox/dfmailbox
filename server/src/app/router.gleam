@@ -8,6 +8,7 @@ import app/handle/h_query
 import app/handle/h_server
 import app/handle/h_trust
 import app/handle/helper
+import app/role
 import app/web
 import gleam/http
 import gleam/http/request
@@ -40,23 +41,23 @@ pub fn handle_request(
     ["v0", ..seg] ->
       case seg {
         ["plot", ..seg] -> {
-          use auth <- web.auth_midleware(req, mist, ctx)
+          use role <- web.auth_midleware(req, mist, ctx)
           case seg {
             [] -> {
               case req.method {
                 http.Get -> {
-                  h_plot.get_plot(auth, ctx)
+                  h_plot.get_plot(role)
                 }
                 http.Post -> {
                   use json <- wisp.require_json(req)
-                  h_plot.register_plot(json, auth, ctx)
+                  h_plot.register_plot(json, role, ctx)
                 }
                 http.Put -> {
                   use json <- wisp.require_json(req)
-                  h_plot.update_plot(json, auth, ctx)
+                  h_plot.update_plot(json, role, ctx)
                 }
                 http.Delete -> {
-                  h_plot.delete_plot(auth, ctx)
+                  h_plot.delete_plot(role, ctx)
                 }
                 _ ->
                   wisp.method_not_allowed([
@@ -69,13 +70,7 @@ pub fn handle_request(
             }
             ["whoami"] -> {
               use <- wisp.require_method(req, http.Get)
-              use a <- helper.try_res(
-                web.match_authenticated(auth)
-                |> result.replace_error(helper.construct_error(
-                  "Must have some auth",
-                  401,
-                )),
-              )
+              use a <- helper.try_res(role.match_authenticated(role))
               json.object([#("plot_id", json.int(a))])
               |> json.to_string_tree()
               |> wisp.json_response(200)
@@ -84,48 +79,48 @@ pub fn handle_request(
               case req.method {
                 http.Get -> {
                   let query = wisp.get_query(req)
-                  h_mailbox.peek(query, auth, ctx)
+                  h_mailbox.peek(query, role, ctx)
                 }
                 http.Post -> {
                   use json <- wisp.require_json(req)
-                  h_mailbox.enqueue(json, auth, ctx)
+                  h_mailbox.enqueue(json, role, ctx)
                 }
                 http.Delete -> {
                   let query = wisp.get_query(req)
-                  h_mailbox.cleanup(query, auth, ctx)
+                  h_mailbox.cleanup(query, role, ctx)
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
             ["query"] -> {
               use <- wisp.require_method(req, http.Post)
               use json <- wisp.require_json(req)
-              h_query.run_query(json, auth, ctx)
+              h_query.run_query(json, role, ctx)
             }
             ["api-key"] ->
               case req.method {
                 http.Get -> {
-                  h_api_key.get_all(auth, ctx)
+                  h_api_key.get_all(role, ctx)
                 }
                 http.Post -> {
-                  h_api_key.add(auth, ctx)
+                  h_api_key.add(role, ctx)
                 }
                 http.Delete -> {
-                  h_api_key.purge_keys(auth, ctx)
+                  h_api_key.purge_keys(role, ctx)
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }
             ["trust"] ->
               case req.method {
                 http.Get -> {
-                  h_trust.get_trusted(auth, ctx)
+                  h_trust.get_trusted(role, ctx)
                 }
                 http.Post -> {
                   use json <- wisp.require_json(req)
-                  h_trust.trust_plot(json, auth, ctx)
+                  h_trust.trust_plot(json, role, ctx)
                 }
                 http.Delete -> {
                   use json <- wisp.require_json(req)
-                  h_trust.untrust_plot(json, auth, ctx)
+                  h_trust.untrust_plot(json, role, ctx)
                 }
                 _ -> wisp.method_not_allowed([http.Get, http.Post, http.Delete])
               }

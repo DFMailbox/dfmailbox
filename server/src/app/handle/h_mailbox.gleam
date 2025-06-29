@@ -4,8 +4,8 @@ import app/address
 import app/ctx
 import app/ext/cross_send
 import app/handle/helper
+import app/role
 import app/struct/mailbox
-import app/web
 import ed25519/public_key
 import gleam/bool
 import gleam/dynamic
@@ -18,7 +18,7 @@ import gleam/string
 import sql
 import wisp
 
-pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
+pub fn peek(query: helper.Query, role: role.Role, ctx: ctx.Context) {
   use msg_id <- helper.require_id(query, "msg_id")
   let limit =
     list.key_find(query, "limit")
@@ -27,11 +27,7 @@ pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
     |> result.flatten
     |> option.from_result()
 
-  use plot <- helper.try_res(
-    auth
-    |> web.match_generic()
-    |> result.replace_error(helper.construct_error("Plot auth required", 403)),
-  )
+  use plot <- helper.try_res(role |> role.match_host)
   let mailbox = case
     ctx.mailbox_map
     |> cache.get(plot.id)
@@ -59,14 +55,11 @@ pub fn peek(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
 pub fn enqueue_other(
   dest_plot: Int,
   payload: dynamic.Dynamic,
-  auth: web.Authentication,
+  role: role.Role,
   ctx: ctx.Context,
 ) {
   use body <- helper.guard_json(payload, mailbox.post_mailbox_body_decoder())
-  use auth_plot <- helper.try_res(
-    auth
-    |> web.match_generic(),
-  )
+  use auth_plot <- helper.try_res(role |> role.match_host)
 
   use plot <- helper.guard_db(sql.get_plot(ctx.conn, dest_plot))
   use plot <- helper.try_res(
@@ -156,16 +149,9 @@ pub fn enqueue_other(
   }
 }
 
-pub fn enqueue(
-  payload: dynamic.Dynamic,
-  auth: web.Authentication,
-  ctx: ctx.Context,
-) {
+pub fn enqueue(payload: dynamic.Dynamic, role: role.Role, ctx: ctx.Context) {
   use body <- helper.guard_json(payload, mailbox.post_mailbox_body_decoder())
-  use plot <- helper.try_res(
-    auth
-    |> web.match_generic(),
-  )
+  use plot <- helper.try_res(role |> role.match_host)
   let mailbox = case
     ctx.mailbox_map
     |> cache.get(plot.id)
@@ -195,7 +181,7 @@ pub fn enqueue(
   |> wisp.json_response(200)
 }
 
-pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) {
+pub fn cleanup(query: helper.Query, role: role.Role, ctx: ctx.Context) {
   use msg_id <- helper.require_id(query, "msg_id")
   let limit =
     list.key_find(query, "limit")
@@ -205,10 +191,7 @@ pub fn cleanup(query: helper.Query, auth: web.Authentication, ctx: ctx.Context) 
     |> option.from_result()
   let return = list.key_find(query, "return")
 
-  use plot <- helper.try_res(
-    auth
-    |> web.match_generic(),
-  )
+  use plot <- helper.try_res(role |> role.match_host)
   let mailbox = case
     ctx.mailbox_map
     |> cache.get(plot.id)

@@ -22,7 +22,7 @@ pub type Problem {
   )
 }
 
-pub fn problem_response(problem: Problem) {
+pub fn to_response(problem: Problem) {
   wisp.response(problem.status)
   |> wisp.set_header("content-type", "application/problem+json; charset=utf-8")
   |> wisp.set_body(wisp.Text(problem |> to_json |> json.to_string_tree))

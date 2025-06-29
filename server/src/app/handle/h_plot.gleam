@@ -1,10 +1,12 @@
 import actor/cache
 import actor/plot_mailbox
 import actor/profiles
+import app/address
 import app/ctx
 import app/handle/helper
+import app/problem
+import app/role
 import app/struct/plot
-import app/web
 import ed25519/public_key
 import gleam/dynamic
 import gleam/json
@@ -16,14 +18,11 @@ import wisp
 
 pub fn update_plot(
   json: dynamic.Dynamic,
-  auth: web.Authentication,
+  role: role.Role,
   ctx: ctx.Context,
 ) -> wisp.Response {
   use body <- helper.guard_json(json, plot.update_plot_body_decoder())
-  use plot <- helper.try_res(
-    web.match_authenticated(auth)
-    |> result.replace_error(helper.construct_error("No auth present", 401)),
-  )
+  use plot <- helper.try_res(role.match_authenticated(role))
   let _ = case body.instance {
     option.Some(inst) -> {
       let _nil =
@@ -46,10 +45,9 @@ pub fn update_plot(
   wisp.ok()
 }
 
-pub fn delete_plot(auth: web.Authentication, ctx: ctx.Context) {
-  case auth {
-    web.LocalPlot(id:, owner: _, mailbox_msg_id: _)
-    | web.LocalPlotApi(id:, owner: _, mailbox_msg_id: _, api_key: _) -> {
+pub fn delete_plot(role: role.Role, ctx: ctx.Context) {
+  case role {
+    role.Host(id:, owner: _, mailbox_msg_id: _) -> {
       let _nil =
         ctx.mailbox_map
         |> cache.get(id)
@@ -62,29 +60,46 @@ pub fn delete_plot(auth: web.Authentication, ctx: ctx.Context) {
       wisp.ok()
     }
 
-    web.RemotePlot(id:, owner: _, instance: _, mailbox_msg_id: _)
-    | web.RemotePlotApi(
-        id:,
-        owner: _,
-        instance: _,
-        mailbox_msg_id: _,
-        api_key: _,
-      ) -> {
+    role.Registered(id:, owner: _, instance: _, address: _, mailbox_msg_id: _) -> {
       let _ = sql.purge_api_keys(ctx.conn, id)
       let _ = sql.delete_trust(ctx.conn, id)
       let _ = sql.delete_plot(ctx.conn, id)
       wisp.ok()
     }
-    web.UnregisteredPlot(_, _) ->
+    role.Unregistered(_, _) ->
       helper.construct_error("Plot not registered", 409)
-
-    web.NoAuth -> helper.construct_error("No auth present", 401)
+    role.NoAuth -> role.unauthorized() |> problem.to_response()
   }
 }
 
-pub fn get_plot(auth: web.Authentication, ctx: ctx.Context) {
-  use plot <- helper.try_res(web.match_generic(auth))
-  get_other_plot(plot.id, ctx)
+pub fn get_plot(role: role.Role) {
+  use res <- helper.try_res(
+    role.match_registered_callback(
+      role,
+      host: fn(plot) {
+        plot.GetPlotResponse(
+          plot_id: plot.id,
+          owner: plot.owner,
+          mailbox_msg_id: plot.mailbox_msg_id,
+          public_key: option.None,
+          address: option.None,
+        )
+      },
+      registered: fn(plot, pubkey, address) {
+        plot.GetPlotResponse(
+          plot_id: plot.id,
+          owner: plot.owner,
+          mailbox_msg_id: plot.mailbox_msg_id,
+          public_key: pubkey |> option.Some,
+          address: address |> option.Some,
+        )
+      },
+    ),
+  )
+  res
+  |> plot.encode_get_plot_response()
+  |> json.to_string_tree()
+  |> wisp.json_response(200)
 }
 
 pub fn get_other_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
@@ -100,7 +115,10 @@ pub fn get_other_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
             let assert Ok(k) = public_key.deserialize_all(a)
             k
           }),
-        address: it.address,
+        address: option.map(it.address, fn(addr) {
+          let assert Ok(addr) = address.parse(addr)
+          addr
+        }),
         mailbox_msg_id: it.mailbox_msg_id,
       )
       |> plot.encode_get_plot_response()
@@ -111,17 +129,8 @@ pub fn get_other_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
   }
 }
 
-pub fn register_plot(
-  json: dynamic.Dynamic,
-  auth: web.Authentication,
-  ctx: ctx.Context,
-) {
-  use #(plot_id, name) <- helper.try_res(case auth {
-    web.UnregisteredPlot(plot_id, name) -> Ok(#(plot_id, name))
-    web.NoAuth ->
-      Error(helper.construct_error("No authentication present", 401))
-    _ -> Error(helper.construct_error("Plot already registered", 403))
-  })
+pub fn register_plot(json: dynamic.Dynamic, role: role.Role, ctx: ctx.Context) {
+  use #(plot_id, name) <- helper.try_res(role.match_unregistered(role))
   use body <- helper.guard_json(json, plot.register_plot_body_decoder())
 
   let assert Ok(uuid) = profiles.fetch(ctx.profiles, name)
@@ -136,11 +145,10 @@ pub fn register_plot(
       )
     option.None -> sql.register_plot_int(ctx.conn, plot_id, uuid)
   }
-  use res <- helper.guard_db_constraint(
-    res,
-    "plot_instance_fkey",
-    helper.construct_error("instance not registered", 409),
-  )
+  use res <- helper.guard_db_constraint(res, "plot_instance_fkey", fn() {
+    let assert option.Some(instance) = body.instance
+    problem.unknown_instance(409, instance) |> problem.to_response
+  })
 
   case echo res.count {
     1 -> wisp.created()
