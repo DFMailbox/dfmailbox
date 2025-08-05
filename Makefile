@@ -1,5 +1,5 @@
 # Would use Justfile but Makefile though arcane is ubiquitous
-.PHONY: up compliance_test
+.PHONY: up compliance_test compliance_test_verbose up_compliance
 
 DOCKER_COMPOSE_RUN = docker compose -f docker-compose.yml
 DOCKER_COMPOSE_COMPLIANCE = docker compose -f compliance-docker-compose.yml
