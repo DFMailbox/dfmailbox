@@ -1,7 +1,7 @@
 import actor/plot_mailbox
 import app/ctx
 import app/handle/helper
-import dfjson
+import dynjson
 import ed25519/public_key
 import gleam/bool
 import gleam/dynamic
@@ -74,7 +74,7 @@ pub fn post_ext_mailbox_response_decoder() -> decode.Decoder(
 }
 
 pub type PostExtMailboxBody {
-  PostExtMailboxBody(from: Int, to: Int, data: List(dfjson.DFJson))
+  PostExtMailboxBody(from: Int, to: Int, data: List(dynjson.DynJson))
 }
 
 pub fn post_ext_mailbox_body_to_json(
@@ -84,13 +84,13 @@ pub fn post_ext_mailbox_body_to_json(
   json.object([
     #("from", json.int(from)),
     #("to", json.int(to)),
-    #("data", json.array(data, dfjson.encode_df_json)),
+    #("data", json.array(data, dynjson.to_json)),
   ])
 }
 
 fn post_ext_mailbox_body_decoder() -> decode.Decoder(PostExtMailboxBody) {
   use from <- decode.field("from", decode.int)
   use to <- decode.field("to", decode.int)
-  use data <- decode.field("data", decode.list(dfjson.df_json_decoder()))
+  use data <- decode.field("data", decode.list(dynjson.decoder()))
   decode.success(PostExtMailboxBody(from:, to:, data:))
 }

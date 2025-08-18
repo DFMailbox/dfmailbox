@@ -1,14 +1,14 @@
 import actor/plot_mailbox
-import dfjson
+import dynjson
 import gleam/dynamic/decode
 import gleam/json
 
 pub type PostMailboxBody {
-  PostMailboxBody(data: List(dfjson.DFJson))
+  PostMailboxBody(data: List(dynjson.DynJson))
 }
 
 pub fn post_mailbox_body_decoder() -> decode.Decoder(PostMailboxBody) {
-  use data <- decode.then(decode.list(dfjson.df_json_decoder()))
+  use data <- decode.then(decode.list(dynjson.decoder()))
   decode.success(PostMailboxBody(data:))
 }
 

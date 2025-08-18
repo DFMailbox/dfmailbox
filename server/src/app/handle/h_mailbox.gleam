@@ -204,12 +204,16 @@ pub fn cleanup(query: helper.Query, role: role.Role, ctx: ctx.Context) {
     }
   }
 
+  let return = case return {
+    Ok(str) -> str == "false"
+    Error(Nil) -> True
+  }
   case return {
-    Error(Nil) -> {
+    False -> {
       plot_mailbox.cleanup(mailbox, msg_id)
       wisp.ok()
     }
-    Ok(_) -> {
+    True -> {
       let items = plot_mailbox.recieve(mailbox, msg_id, limit, True)
 
       mailbox.PeekMailboxResponse(

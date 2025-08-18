@@ -11,6 +11,7 @@ import gleam/result
 import gleam/string
 import youid/uuid.{type Uuid}
 
+// dict keys must be lowercase
 type Store =
   dict.Dict(String, Uuid)
 
@@ -26,11 +27,11 @@ pub type Message {
 fn handle_message(message: Message, store: Store) -> actor.Next(Message, Store) {
   case message {
     Get(key, reply) -> {
-      process.send(reply, dict.get(store, key))
+      process.send(reply, dict.get(store, key |> string.lowercase))
       actor.continue(store)
     }
     Set(key, value) -> {
-      dict.insert(store, key, value)
+      dict.insert(store, key |> string.lowercase, value)
       |> actor.continue()
     }
     Shutdown -> actor.Stop(process.Normal)
@@ -41,6 +42,11 @@ const timeout = 1000
 
 pub fn new() {
   actor.start(dict.new(), handle_message)
+}
+
+/// Start the profiles actor with a cahce, useful for offline testing
+pub fn new_with_cache(dict) {
+  actor.start(dict, handle_message)
 }
 
 pub fn get(cache: Cache, key: String) {

@@ -2,7 +2,7 @@ import app/address
 import app/handle/h_fed_mailbox
 import app/handle/helper
 import app/struct/server
-import dfjson
+import dynjson
 import ed25519/public_key
 import ed25519/signature
 import gleam/bit_array
@@ -105,7 +105,7 @@ pub fn send(
   identity_key: BitArray,
   sender: Int,
   receiver: Int,
-  data: List(dfjson.DFJson),
+  data: List(dynjson.DynJson),
 ) {
   let body =
     h_fed_mailbox.PostExtMailboxBody(from: sender, to: receiver, data:)

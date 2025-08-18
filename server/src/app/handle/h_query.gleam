@@ -2,7 +2,7 @@ import actor/plot_mailbox
 import app/ctx
 import app/handle/helper
 import app/role
-import dfjson
+import dynjson
 import gleam/bool
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -122,7 +122,7 @@ fn query_body_decoder() -> decode.Decoder(QueryBody) {
 type MailboxOperation {
   DoPeek(after: Int, limit: option.Option(Int))
   DoDequeue(after: Int, limit: option.Option(Int))
-  DoEnqueue(value: List(dfjson.DFJson), to: option.Option(Int))
+  DoEnqueue(value: List(dynjson.DynJson), to: option.Option(Int))
   DoCleanup(before_at: Int)
 }
 
@@ -148,7 +148,7 @@ fn mailbox_operation_decoder() -> decode.Decoder(MailboxOperation) {
       decode.success(DoDequeue(after:, limit:))
     }
     "enqueue" -> {
-      use value <- decode.field("value", decode.list(dfjson.df_json_decoder()))
+      use value <- decode.field("value", decode.list(dynjson.decoder()))
       use to <- decode.field("to", decode.optional(decode.int))
       decode.success(DoEnqueue(value:, to:))
     }
