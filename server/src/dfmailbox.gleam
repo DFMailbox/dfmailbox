@@ -63,12 +63,10 @@ pub fn main() -> Nil {
 
 fn testing_mode_tantrum() {
   wisp.log_alert(
-    "=== YOU ARE RUNNING TESTING MODE, ANYONE CAN IMPERSONATE ANYONE ===",
+    "=== YOU ARE RUNNING TESTING MODE, ANYONE CAN IMPERSONATE ANYONE ===
+=== IF YOU DO NOT KNOW WHAT THIS IS, UNSET ENV VARIABLE `TESTING_MODE` ===",
   )
-  wisp.log_alert(
-    "=== IF YOU DO NOT KNOW WHAT THIS IS, UNSET ENV VARIABLE `TESTING_MODE` ===",
-  )
-  process.sleep(5000)
+  process.sleep(10_000)
   testing_mode_tantrum()
 }
 
