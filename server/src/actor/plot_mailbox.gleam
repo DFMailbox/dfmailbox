@@ -1,25 +1,31 @@
-import birl
 import dynjson
 import gleam/erlang/process.{type Subject}
+import gleam/float
 import gleam/json
 import gleam/list
 import gleam/option
 import gleam/otp/actor
 import gleam/result
+import gleam/time/timestamp
 
 type Store {
   Store(list: List(StoreRow), id: Int)
 }
 
 pub type StoreRow {
-  StoreRow(id: Int, time: birl.Time, plot_origin: Int, val: dynjson.DynJson)
+  StoreRow(
+    id: Int,
+    time: timestamp.Timestamp,
+    plot_origin: Int,
+    val: dynjson.DynJson,
+  )
 }
 
 pub fn encode_store_row(store_row: StoreRow) -> json.Json {
   let StoreRow(id:, time:, plot_origin:, val:) = store_row
   json.object([
     #("id", json.int(id)),
-    #("time", time |> birl.to_unix |> json.int()),
+    #("time", time |> timestamp.to_unix_seconds |> float.round |> json.int()),
     #("plot_origin", json.int(plot_origin)),
     #("val", dynjson.to_json(val)),
   ])
@@ -54,10 +60,7 @@ pub type PlotMailboxQuery {
   Shutdown
 }
 
-fn handle_message(
-  message: PlotMailboxQuery,
-  store: Store,
-) -> actor.Next(PlotMailboxQuery, Store) {
+fn handle_message(store: Store, message: PlotMailboxQuery) {
   case message {
     Send(vals, origin, reply) -> {
       let new_id = store.id + { list.length(vals) }
@@ -68,7 +71,7 @@ fn handle_message(
             id: store.id + i,
             val: x,
             plot_origin: origin,
-            time: birl.utc_now(),
+            time: timestamp.system_time(),
           )
         })
       let new = list.append(store.list, vals)
@@ -107,14 +110,17 @@ fn handle_message(
       Store(..store, list: list)
       |> actor.continue()
     }
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> actor.stop()
   }
 }
 
 const timeout = 1000
 
 pub fn new(id: Int) {
-  let assert Ok(subj) = actor.start(Store([], id), handle_message)
+  let assert Ok(subj) =
+    actor.new(Store([], id))
+    |> actor.on_message(handle_message)
+    |> actor.start()
   subj
 }
 
@@ -130,7 +136,7 @@ pub fn send(
   items: List(dynjson.DynJson),
   plot_origin origin: Int,
 ) -> Int {
-  actor.call(mailbox, Send(value: items, reply_with: _, origin:), timeout)
+  actor.call(mailbox, timeout, Send(value: items, reply_with: _, origin:))
 }
 
 /// Get all items after a specific id and maybe run cleanup
@@ -140,11 +146,12 @@ pub fn recieve(
   limit: option.Option(Int),
   peek: Bool,
 ) -> ReadResult {
-  actor.call(
-    mailbox,
-    Receive(after:, reply_with: _, limit:, cleanup: peek),
-    timeout,
-  )
+  actor.call(mailbox, timeout, Receive(
+    after:,
+    reply_with: _,
+    limit:,
+    cleanup: peek,
+  ))
 }
 
 pub fn shutdown(cache: PlotMailbox) {

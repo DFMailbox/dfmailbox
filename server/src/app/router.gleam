@@ -16,7 +16,6 @@ import gleam/http/response
 import gleam/int
 import gleam/json
 import gleam/result
-import gleam/string_tree
 import mist
 import wisp.{type Request, type Response}
 import wisp/wisp_mist
@@ -72,7 +71,7 @@ pub fn handle_request(
               use <- wisp.require_method(req, http.Get)
               use a <- helper.try_res(role.match_authenticated(role))
               json.object([#("plot_id", json.int(a))])
-              |> json.to_string_tree()
+              |> json.to_string
               |> wisp.json_response(200)
             }
             ["mailbox"] ->
@@ -202,12 +201,10 @@ pub fn handle_request(
       }
     ["robots.txt"] -> {
       wisp.response(200)
-      |> wisp.set_body(
-        "User-agent: *\nDisallow: /" |> string_tree.from_string |> wisp.Text,
-      )
+      |> wisp.set_body("User-agent: *\nDisallow: /" |> wisp.Text)
     }
     [] -> {
-      wisp.html_response("dfmailbox" |> string_tree.from_string, 200)
+      wisp.html_response("dfmailbox", 200)
     }
     _ -> wisp.not_found()
   }

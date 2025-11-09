@@ -25,7 +25,7 @@ pub type Problem {
 pub fn to_response(problem: Problem) {
   wisp.response(problem.status)
   |> wisp.set_header("content-type", "application/problem+json; charset=utf-8")
-  |> wisp.set_body(wisp.Text(problem |> to_json |> json.to_string_tree))
+  |> wisp.set_body(wisp.Text(problem |> to_json |> json.to_string))
 }
 
 fn optional_push(dict: List(#(a, b)), a: a, b: option.Option(b)) {

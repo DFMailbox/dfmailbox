@@ -105,7 +105,7 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
         |> instance.address_key_pair_to_json()
 
       json.object([#("instance", instance)])
-      |> json.to_string_tree()
+      |> json.to_string
       |> wisp.json_response(200)
     }
     Error(Nil) -> {
@@ -123,7 +123,7 @@ pub fn get_instance(query: helper.Query, ctx: ctx.Context) {
           |> instance.address_key_pair_to_json()
         })
       json.object([#("instances", instances)])
-      |> json.to_string_tree()
+      |> json.to_string
       |> wisp.json_response(200)
     }
   }

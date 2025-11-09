@@ -16,7 +16,7 @@ pub fn get_all(role: role.Role, ctx: ctx.Context) {
   keys.rows
   |> api_key.GetAllApiKeysResponse
   |> api_key.encode_get_keys_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 
@@ -33,7 +33,7 @@ pub fn add(role: role.Role, ctx: ctx.Context) {
   ))
   api_key.CreateApiKeyResponse(api_key: gen)
   |> api_key.encode_create_api_key_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 

@@ -15,10 +15,7 @@ pub type Message(k, v) {
   Shutdown
 }
 
-fn handle_message(
-  message: Message(k, v),
-  store: Store(k, v),
-) -> actor.Next(Message(k, v), Store(k, v)) {
+fn handle_message(store: Store(k, v), message: Message(k, v)) {
   case message {
     Get(key, reply) -> {
       process.send(reply, dict.get(store, key))
@@ -32,19 +29,22 @@ fn handle_message(
       dict.drop(store, [key])
       |> actor.continue()
     }
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> actor.stop()
   }
 }
 
 const timeout = 1000
 
 pub fn new() {
-  let assert Ok(it) = actor.start(dict.new(), handle_message)
+  let assert Ok(it) =
+    actor.new(dict.new())
+    |> actor.on_message(handle_message)
+    |> actor.start()
   it
 }
 
 pub fn get(cache: Cache(k, v), key: k) {
-  actor.call(cache, Get(key, _), timeout)
+  actor.call(cache, timeout, Get(key, _))
 }
 
 pub fn set(cache: Cache(k, v), key: k, mailbox: v) {

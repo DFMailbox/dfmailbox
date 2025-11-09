@@ -11,6 +11,7 @@ import gleam/bool
 import gleam/erlang/process
 import gleam/int
 import gleam/list
+import gleam/otp/static_supervisor as supervisor
 import gleam/result
 import gleam/string
 import mist
@@ -23,26 +24,23 @@ pub fn main() -> Nil {
   dot_env.load_default()
 
   let env = get_env()
-  let assert Ok(config) =
-    pog.url_config(env.database_url)
+  let pool_name = process.new_name("database_pool")
+  let assert Ok(_start) =
+    start_application_supervisor(env.database_url, pool_name)
     |> result.replace_error("Cannot parse database url")
-
-  let conn =
-    config
-    |> pog.connect
 
   let assert Ok(private_key) = private_key.from_base64(env.secret_key)
   let assert Ok(profile_cache) = profiles.new()
 
   let context =
     ctx.Context(
-      conn:,
+      conn: pog.named_connection(pool_name),
       private_key:,
-      profiles: profile_cache,
+      profiles: profile_cache.data,
       df_ips: env.allowed_ips,
-      identity_key_map: cache.new(),
-      ext_identity_key_map: cache.new(),
-      mailbox_map: cache.new(),
+      identity_key_map: cache.new().data,
+      ext_identity_key_map: cache.new().data,
+      mailbox_map: cache.new().data,
       nginx: env.is_nginx,
       instance: env.host,
       testing_mode: env.testing_mode,
@@ -53,12 +51,31 @@ pub fn main() -> Nil {
     |> mist.new
     |> mist.bind("0.0.0.0")
     |> mist.port(env.port)
-    |> mist.start_http
+    |> mist.start
 
   case env.testing_mode {
     True -> testing_mode_tantrum()
     False -> process.sleep_forever()
   }
+}
+
+pub fn start_application_supervisor(
+  url: String,
+  pool_name: process.Name(pog.Message),
+) {
+  use config <- result.try(pog.url_config(pool_name, url))
+
+  let pool_child =
+    config
+    |> pog.host("localhost")
+    |> pog.database("my_database")
+    |> pog.pool_size(15)
+    |> pog.supervised
+
+  supervisor.new(supervisor.RestForOne)
+  |> supervisor.add(pool_child)
+  |> supervisor.start
+  |> Ok
 }
 
 fn testing_mode_tantrum() {

@@ -1,5 +1,6 @@
 import gleam/dynamic/decode
 import gleam/option.{type Option}
+import gleam/time/timestamp
 import pog
 import youid/uuid.{type Uuid}
 
@@ -196,7 +197,7 @@ pub type GetApiKeysRow {
     id: Int,
     plot: Int,
     hashed_key: BitArray,
-    created_at: pog.Timestamp,
+    created_at: timestamp.Timestamp,
   )
 }
 

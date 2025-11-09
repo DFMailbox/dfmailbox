@@ -24,7 +24,7 @@ pub type Message {
   Shutdown
 }
 
-fn handle_message(message: Message, store: Store) -> actor.Next(Message, Store) {
+fn handle_message(store: Store, message: Message) {
   case message {
     Get(key, reply) -> {
       process.send(reply, dict.get(store, key |> string.lowercase))
@@ -34,23 +34,27 @@ fn handle_message(message: Message, store: Store) -> actor.Next(Message, Store) 
       dict.insert(store, key |> string.lowercase, value)
       |> actor.continue()
     }
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> actor.stop()
   }
 }
 
 const timeout = 1000
 
 pub fn new() {
-  actor.start(dict.new(), handle_message)
+  actor.new(dict.new())
+  |> actor.on_message(handle_message)
+  |> actor.start()
 }
 
 /// Start the profiles actor with a cahce, useful for offline testing
 pub fn new_with_cache(dict) {
-  actor.start(dict, handle_message)
+  actor.new(dict)
+  |> actor.on_message(handle_message)
+  |> actor.start()
 }
 
 pub fn get(cache: Cache, key: String) {
-  actor.call(cache, Get(key, _), timeout)
+  actor.call(cache, timeout, Get(key, _))
 }
 
 pub fn set(cache: Cache, key: String, uuid: Uuid) {

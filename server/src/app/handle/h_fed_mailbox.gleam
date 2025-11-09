@@ -51,7 +51,7 @@ pub fn post(
   plot_mailbox.send(mailbox, body.data, from.id)
   |> PostExtMailboxResponse()
   |> post_ext_mailbox_response_to_json()
-  |> json.to_string_tree()
+  |> json.to_string()
   |> wisp.json_response(200)
 }
 

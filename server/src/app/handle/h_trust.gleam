@@ -33,6 +33,6 @@ pub fn get_trusted(role: role.Role, ctx: ctx.Context) {
   |> list.map(fn(x) { x.trusted })
   |> trust.GetTrustsResponse()
   |> trust.encode_get_trusts_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }

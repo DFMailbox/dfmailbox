@@ -36,7 +36,7 @@ pub fn sign(query: helper.Query, ctx: ctx.Context) {
 
   server.SigningResponse(public_key, sig, ctx.instance)
   |> server.signing_response_to_json
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 
@@ -106,6 +106,6 @@ pub fn identity_key(json: dynamic.Dynamic, ctx: ctx.Context) {
     address: ctx.instance,
   )
   |> server.encode_identify_instance_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }

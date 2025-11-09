@@ -94,7 +94,7 @@ pub fn query_error(key: String) {
 
 pub fn construct_error(msg: String, code: Int) -> wisp.Response {
   wisp.json_response(
-    json.object([#("error", json.string(msg))]) |> json.to_string_tree,
+    json.object([#("error", json.string(msg))]) |> json.to_string,
     code,
   )
 }
@@ -145,6 +145,6 @@ pub fn decode_error_format(err: decode.DecodeError) {
 fn transform_decode_err(err: List(decode.DecodeError)) {
   list.map(err, decode_error_format)
   |> json.array(of: json.string)
-  |> json.to_string_tree
-  |> wisp.json_body(wisp.bad_request(), _)
+  |> json.to_string
+  |> wisp.json_body(wisp.response(400), _)
 }

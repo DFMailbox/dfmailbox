@@ -98,7 +98,7 @@ pub fn get_plot(role: role.Role) {
   )
   res
   |> plot.encode_get_plot_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 
@@ -122,7 +122,7 @@ pub fn get_other_plot(id: Int, ctx: ctx.Context) -> wisp.Response {
         mailbox_msg_id: it.mailbox_msg_id,
       )
       |> plot.encode_get_plot_response()
-      |> json.to_string_tree()
+      |> json.to_string
       |> wisp.json_response(200)
     }
     Error(_) -> wisp.not_found()

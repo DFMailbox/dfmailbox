@@ -34,7 +34,7 @@ pub fn get_mailbox(ctx: Context, id: Int, msg_id: Int) {
   {
     Ok(it) -> it
     Error(Nil) -> {
-      let box = plot_mailbox.new(msg_id)
+      let box = plot_mailbox.new(msg_id).data
       cache.set(ctx.mailbox_map, id, box)
       box
     }
@@ -54,8 +54,8 @@ pub fn get_mailbox_lazy(
       let assert Ok(plot) = sql.get_plot(ctx.conn, id)
       use plot <- result.try(list.first(plot.rows))
       let box = plot_mailbox.new(plot.id)
-      cache.set(ctx.mailbox_map, id, box)
-      Ok(box)
+      cache.set(ctx.mailbox_map, id, box.data)
+      Ok(box.data)
     }
   }
 }

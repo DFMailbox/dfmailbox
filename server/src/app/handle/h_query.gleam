@@ -65,7 +65,7 @@ pub fn run_query(json: dynamic.Dynamic, role: role.Role, ctx: ctx.Context) {
   })
   |> QueryResponse
   |> query_response_to_json()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 

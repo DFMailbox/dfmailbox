@@ -1,7 +1,7 @@
-import birl
 import gleam/bit_array
+import gleam/float
 import gleam/json
-import pog
+import gleam/time/timestamp
 import sql
 
 pub type CreateApiKeyResponse {
@@ -31,18 +31,11 @@ pub fn encode_keys_row(get_api_keys_row: sql.GetApiKeysRow) -> json.Json {
       "hashed_key",
       hashed_key |> bit_array.base64_encode(True) |> json.string(),
     ),
-    #("created_at", created_at |> pog_to_birl |> birl.to_unix |> json.int()),
+    #(
+      "created_at",
+      created_at |> timestamp.to_unix_seconds |> float.round |> json.int(),
+    ),
   ])
-}
-
-pub fn pog_to_birl(stamp: pog.Timestamp) -> birl.Time {
-  birl.from_erlang_universal_datetime(
-    #(#(stamp.date.year, stamp.date.month, stamp.date.day), #(
-      stamp.time.hours,
-      stamp.time.minutes,
-      stamp.time.seconds,
-    )),
-  )
 }
 
 pub fn encode_get_keys_response(

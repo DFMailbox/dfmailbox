@@ -34,7 +34,7 @@ pub fn peek(query: helper.Query, role: role.Role, ctx: ctx.Context) {
   {
     Ok(it) -> it
     Error(Nil) -> {
-      let box = plot_mailbox.new(plot.mailbox_msg_id)
+      let box = plot_mailbox.new(plot.mailbox_msg_id).data
       cache.set(ctx.mailbox_map, plot.id, box)
       box
     }
@@ -48,7 +48,7 @@ pub fn peek(query: helper.Query, role: role.Role, ctx: ctx.Context) {
     current_id: items.current_id,
   )
   |> mailbox.encode_peek_mailbox_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 
@@ -91,7 +91,7 @@ pub fn enqueue_other(
             id
             |> mailbox.PostMailboxResponse
             |> mailbox.encode_post_mailbox_response()
-            |> json.to_string_tree()
+            |> json.to_string
             |> wisp.json_response(200)
             |> Ok
           Error(err) ->
@@ -143,7 +143,7 @@ pub fn enqueue_other(
       id
       |> mailbox.PostMailboxResponse
       |> mailbox.encode_post_mailbox_response()
-      |> json.to_string_tree()
+      |> json.to_string
       |> wisp.json_response(200)
     }
   }
@@ -158,7 +158,7 @@ pub fn enqueue(payload: dynamic.Dynamic, role: role.Role, ctx: ctx.Context) {
   {
     Ok(it) -> it
     Error(Nil) -> {
-      let box = plot_mailbox.new(plot.mailbox_msg_id)
+      let box = plot_mailbox.new(plot.mailbox_msg_id).data
       cache.set(ctx.mailbox_map, plot.id, box)
       box
     }
@@ -177,7 +177,7 @@ pub fn enqueue(payload: dynamic.Dynamic, role: role.Role, ctx: ctx.Context) {
   id
   |> mailbox.PostMailboxResponse
   |> mailbox.encode_post_mailbox_response()
-  |> json.to_string_tree()
+  |> json.to_string
   |> wisp.json_response(200)
 }
 
@@ -198,7 +198,7 @@ pub fn cleanup(query: helper.Query, role: role.Role, ctx: ctx.Context) {
   {
     Ok(it) -> it
     Error(Nil) -> {
-      let box = plot_mailbox.new(plot.mailbox_msg_id)
+      let box = plot_mailbox.new(plot.mailbox_msg_id).data
       cache.set(ctx.mailbox_map, plot.id, box)
       box
     }
@@ -222,7 +222,7 @@ pub fn cleanup(query: helper.Query, role: role.Role, ctx: ctx.Context) {
         current_id: items.current_id,
       )
       |> mailbox.encode_peek_mailbox_response()
-      |> json.to_string_tree()
+      |> json.to_string
       |> wisp.json_response(200)
     }
   }
