@@ -10,17 +10,8 @@ up: .env
 watch: .env
 	$(DOCKER_COMPOSE_RUN) watch
 
-compliance_test: .env
-	cd compliance; \
-	go test -count=1 ./...
-
-compliance_test_verbose: .env
-	cd compliance; \
-	go test -count=1 -v ./...
-
 up_compliance:
 	$(DOCKER_COMPOSE_COMPLIANCE) up --build
-
 
 .env:
 	@echo -e "\e[31mCannot find .env file, running ./gen_env.sh\e[0m"

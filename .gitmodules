@@ -1,3 +1,0 @@
-[submodule "dfqueue-compliance"]
-	path = compliance
-	url = https://github.com/DFMailbox/compliance
