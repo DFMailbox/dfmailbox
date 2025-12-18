@@ -6,7 +6,6 @@ import ed25519/private_key
 import ed25519/public_key
 import gleam/list
 import gleam/result
-import mist
 import pog
 import sql
 
@@ -15,7 +14,6 @@ pub type Context {
     conn: pog.Connection,
     private_key: private_key.PrivateKey,
     profiles: profiles.Cache,
-    df_ips: List(mist.IpAddress),
     mailbox_map: cache.Cache(Int, plot_mailbox.PlotMailbox),
     /// Keys issued by other instances to validate this instance
     identity_key_map: cache.Cache(public_key.PublicKey, BitArray),

@@ -4,7 +4,6 @@ import ed25519/public_key
 import gleam/dict
 import gleam/json
 import gleam/option.{None}
-import wisp
 import youid/uuid
 
 pub type Role {
@@ -31,68 +30,6 @@ pub fn to_string(role: Role) {
 
 pub type GenericPlot {
   GenericPlot(id: Int, owner: uuid.Uuid, mailbox_msg_id: Int)
-}
-
-/// ✓ host
-/// x registered, unregistered, no auth
-pub fn match_host(role: Role) -> Result(GenericPlot, wisp.Response) {
-  case role {
-    Host(a, b, c) -> Ok(GenericPlot(a, b, c))
-    role -> Error(expected_role_host(role) |> problem.to_response)
-  }
-}
-
-/// ✓ host, registered, unregistered
-/// x no auth
-pub fn match_authenticated(role: Role) -> Result(Int, wisp.Response) {
-  case role {
-    Unregistered(id, _) -> Ok(id)
-    Host(id, _, _) -> Ok(id)
-    Registered(id, _, _, _, _) -> Ok(id)
-    NoAuth -> Error(unauthorized() |> problem.to_response)
-  }
-}
-
-/// ✓ host, registered
-/// x unregistered, no auth
-pub fn match_registered(role: Role) -> Result(GenericPlot, wisp.Response) {
-  case role {
-    Host(a, b, c) -> GenericPlot(a, b, c) |> Ok
-    Registered(a, b, c, _, _) -> GenericPlot(a, b, c) |> Ok
-    Unregistered(_, _) -> Error(expected_role_any() |> problem.to_response)
-    NoAuth -> Error(unauthorized() |> problem.to_response)
-  }
-}
-
-/// ✓ host, registered
-/// x unregistered, no auth
-pub fn match_registered_callback(
-  role: Role,
-  host host: fn(GenericPlot) -> a,
-  registered registered: fn(
-    GenericPlot,
-    public_key.PublicKey,
-    address.InstanceAddress,
-  ) ->
-    a,
-) -> Result(a, wisp.Response) {
-  case role {
-    Host(a, b, c) -> GenericPlot(a, b, c) |> host |> Ok
-    Registered(a, b, c, key, addr) ->
-      GenericPlot(a, b, c) |> registered(key, addr) |> Ok
-    Unregistered(_, _) -> Error(expected_role_any() |> problem.to_response)
-    NoAuth -> Error(unauthorized() |> problem.to_response)
-  }
-}
-
-/// ✓ unregistered
-/// x host, registered, no auth
-pub fn match_unregistered(role: Role) -> Result(#(Int, String), wisp.Response) {
-  case role {
-    Unregistered(id, name) -> #(id, name) |> Ok
-    NoAuth -> Error(unauthorized() |> problem.to_response)
-    role -> Error(expected_role_unregistered(role) |> problem.to_response)
-  }
 }
 
 pub fn expected_role_any() {

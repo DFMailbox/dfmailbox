@@ -1,13 +1,14 @@
 import app/address
 import ed25519/public_key
+import ewe
 import gleam/bit_array
 import gleam/dict
+import gleam/http/response
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
-import wisp
 import youid/uuid
 
 /// Represents an RFC 9457 problem
@@ -23,9 +24,12 @@ pub type Problem {
 }
 
 pub fn to_response(problem: Problem) {
-  wisp.response(problem.status)
-  |> wisp.set_header("content-type", "application/problem+json; charset=utf-8")
-  |> wisp.set_body(wisp.Text(problem |> to_json |> json.to_string))
+  response.new(problem.status)
+  |> response.set_header(
+    "content-type",
+    "application/problem+json; charset=utf-8",
+  )
+  |> response.set_body(ewe.TextData(problem |> to_json |> json.to_string))
 }
 
 fn optional_push(dict: List(#(a, b)), a: a, b: option.Option(b)) {

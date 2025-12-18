@@ -1,4 +1,4 @@
-import app/handle/decoders
+import app/decoders
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
