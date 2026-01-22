@@ -1,4 +1,3 @@
-import dynjson
 import gleam/erlang/process.{type Subject}
 import gleam/float
 import gleam/json
@@ -7,6 +6,7 @@ import gleam/option
 import gleam/otp/actor
 import gleam/result
 import gleam/time/timestamp
+import json_value
 
 type Store {
   Store(list: List(StoreRow), id: Int)
@@ -17,7 +17,7 @@ pub type StoreRow {
     id: Int,
     time: timestamp.Timestamp,
     plot_origin: Int,
-    val: dynjson.DynJson,
+    val: json_value.JsonValue,
   )
 }
 
@@ -27,7 +27,7 @@ pub fn encode_store_row(store_row: StoreRow) -> json.Json {
     #("id", json.int(id)),
     #("time", time |> timestamp.to_unix_seconds |> float.round |> json.int()),
     #("plot_origin", json.int(plot_origin)),
-    #("val", dynjson.to_json(val)),
+    #("val", json_value.to_json(val)),
   ])
 }
 
@@ -48,7 +48,7 @@ pub type PlotMailbox =
   process.Subject(PlotMailboxQuery)
 
 pub type PlotMailboxQuery {
-  Send(value: List(dynjson.DynJson), origin: Int, reply_with: Subject(Int))
+  Send(value: List(json_value.JsonValue), origin: Int, reply_with: Subject(Int))
   // Dequeue doesn't exist because it isn't idempotent, this matters because this will be exposed in the REST API
   Receive(
     after: Int,
@@ -133,7 +133,7 @@ pub fn cleanup(mailbox: PlotMailbox, keep_after_id: Int) {
 /// Returns the msg_id before the insertions
 pub fn send(
   mailbox: PlotMailbox,
-  items: List(dynjson.DynJson),
+  items: List(json_value.JsonValue),
   plot_origin origin: Int,
 ) -> Int {
   actor.call(mailbox, timeout, Send(value: items, reply_with: _, origin:))
