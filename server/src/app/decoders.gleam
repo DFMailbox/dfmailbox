@@ -1,5 +1,6 @@
 import ed25519/public_key
 import ed25519/signature
+import gleam/bit_array
 import gleam/dynamic/decode
 import youid/uuid
 
@@ -28,5 +29,13 @@ pub fn decode_signature() -> decode.Decoder(signature.Signature) {
   case signature.from_base64(str) {
     Ok(it) -> decode.success(it)
     Error(_) -> decode.failure(signature.default(), "base64 ed25519 signature")
+  }
+}
+
+pub fn decode_bit_array() -> decode.Decoder(BitArray) {
+  use str <- decode.then(decode.string)
+  case bit_array.base64_decode(str) {
+    Ok(it) -> decode.success(it)
+    Error(Nil) -> decode.failure(<<>>, "base64")
   }
 }
